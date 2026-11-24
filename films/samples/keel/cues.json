@@ -1,0 +1,66 @@
+{
+  "template": "launch",
+  "duration": 30,
+  "events": [
+    {
+      "t": 0,
+      "sfx": "whoosh",
+      "align": "peak"
+    },
+    {
+      "t": 2.5,
+      "sfx": "tick",
+      "align": "peak"
+    },
+    {
+      "t": 5,
+      "sfx": "ui",
+      "align": "peak"
+    },
+    {
+      "t": 7.5,
+      "sfx": "click",
+      "align": "peak"
+    },
+    {
+      "t": 10,
+      "sfx": "thud",
+      "align": "peak"
+    },
+    {
+      "t": 12.5,
+      "sfx": "whoosh",
+      "align": "peak"
+    },
+    {
+      "t": 15,
+      "sfx": "tick",
+      "align": "peak"
+    },
+    {
+      "t": 17.5,
+      "sfx": "ui",
+      "align": "peak"
+    },
+    {
+      "t": 20,
+      "sfx": "click",
+      "align": "peak"
+    },
+    {
+      "t": 22.5,
+      "sfx": "thud",
+      "align": "peak"
+    },
+    {
+      "t": 25,
+      "sfx": "tick",
+      "align": "peak"
+    },
+    {
+      "t": 27.5,
+      "sfx": "chime",
+      "align": "peak"
+    }
+  ]
+}

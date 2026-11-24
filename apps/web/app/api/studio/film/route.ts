@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
-import { compose } from "@harkat/engine";
+import { composeWithModel, extractSite, fetchImageData, fetchPublicPage } from "@harkat/engine";
 import { clientIp, rateLimit, sameOrigin } from "@/lib/rateLimit";
+
+function withProto(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ ok: false, reason: "Forbidden" }, { status: 403 });
@@ -11,7 +17,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, reason: "Too many previews from this network. Please wait a few minutes." }, { status: 429 });
   }
 
-  let body: { name?: string; problem?: string; features?: unknown; accent?: string; url?: string; logo?: string; template?: string };
+  let body: {
+    name?: string;
+    problem?: string;
+    oneLiner?: string;
+    features?: unknown;
+    accent?: string;
+    accentSet?: boolean;
+    url?: string;
+    logo?: string;
+    goal?: string;
+    tone?: string;
+    length?: number;
+    audience?: string;
+    proof?: string;
+    personalize?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -19,12 +40,58 @@ export async function POST(req: Request) {
   }
 
   const features = Array.isArray(body.features) ? body.features.filter((f): f is string => typeof f === "string") : [];
-  const allowed = ["launch", "holo", "workflow", "auto"] as const;
-  const template = allowed.find((item) => item === body.template) ?? "auto";
-  const made = compose(
-    { name: body.name, problem: body.problem, features, accent: body.accent, url: body.url, logo: body.logo, sample: true, template },
-    { fontUrl: "/fonts/Geist-Variable.woff2" },
+  let name = body.name;
+  let problem = body.problem || body.oneLiner;
+  let accent = body.accent;
+  let logo = body.logo;
+  let siteText = "";
+  if (body.url && body.personalize !== false) {
+    try {
+      const page = await fetchPublicPage(withProto(body.url));
+      const site = extractSite(page.html, page.url);
+      siteText = `${site.name} ${site.tagline}`.trim();
+      if (!name && site.name) name = site.name;
+      if (!problem && site.tagline) problem = site.tagline;
+      if (!body.accentSet && site.color) accent = site.color;
+      if (!logo && site.logoHref) {
+        try {
+          logo = (await fetchImageData(site.logoHref)) ?? undefined;
+        } catch { /* a missing logo should not block the preview */ }
+      }
+      if (!logo && site.logoSvg) logo = `data:image/svg+xml,${encodeURIComponent(site.logoSvg)}`;
+    } catch { /* keep the brief the person typed */ }
+  }
+
+  const goals = ["launch", "feature", "explainer"] as const;
+  const tones = ["quiet", "plain", "bold"] as const;
+  const lengths = [15, 30, 45] as const;
+  const made = await composeWithModel(
+    {
+      name,
+      problem,
+      features,
+      accent,
+      url: body.url,
+      logo,
+      sample: true,
+      audience: body.audience,
+      proof: body.proof,
+      goal: goals.find((item) => item === body.goal) ?? "launch",
+      tone: tones.find((item) => item === body.tone) ?? "plain",
+      length: lengths.find((item) => item === Number(body.length)) ?? 30,
+    },
+    { fontUrl: "/fonts/Geist-Variable.woff2", siteText },
   );
   if (!made.ok) return NextResponse.json(made, { status: 422 });
-  return NextResponse.json({ ok: true, html: made.html, duration: made.duration, events: made.events });
+  return NextResponse.json({
+    ok: true,
+    html: made.html,
+    duration: made.duration,
+    events: made.events,
+    goal: made.goal,
+    length: made.length,
+    accent: made.accent,
+    planSource: made.planSource,
+    planCost: made.planCost,
+  });
 }

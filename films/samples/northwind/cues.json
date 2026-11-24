@@ -1,0 +1,36 @@
+{
+  "template": "feature",
+  "duration": 15,
+  "events": [
+    {
+      "t": 0,
+      "sfx": "whoosh",
+      "align": "peak"
+    },
+    {
+      "t": 2.5,
+      "sfx": "tick",
+      "align": "peak"
+    },
+    {
+      "t": 5,
+      "sfx": "ui",
+      "align": "peak"
+    },
+    {
+      "t": 7.5,
+      "sfx": "click",
+      "align": "peak"
+    },
+    {
+      "t": 10,
+      "sfx": "thud",
+      "align": "peak"
+    },
+    {
+      "t": 12.5,
+      "sfx": "chime",
+      "align": "peak"
+    }
+  ]
+}

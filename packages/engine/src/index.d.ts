@@ -1,14 +1,23 @@
+export type Goal = "launch" | "feature" | "explainer";
+export type Tone = "quiet" | "plain" | "bold";
+
 export type BriefInput = {
   name?: string;
   problem?: string;
+  oneLiner?: string;
   features?: string[];
   accent?: string;
   url?: string;
   logo?: string | null;
   /** When true, the end card says this is a sample film. */
   sample?: boolean;
-  /** launch, holo, workflow, or omit to let the brief choose. */
-  template?: "launch" | "holo" | "workflow" | "auto";
+  audience?: string;
+  proof?: string;
+  goal?: Goal;
+  tone?: Tone;
+  length?: 15 | 30 | 45;
+  /** Older studio values. Mapped onto goal. */
+  template?: "launch" | "holo" | "workflow" | "auto" | Goal;
 };
 
 export type Cue = {
@@ -24,10 +33,29 @@ export type ComposeOk = {
   duration: number;
   events: Cue[];
   hostname: string;
-  template: "launch" | "holo" | "workflow";
+  template: Goal;
+  goal: Goal;
+  length: number;
+  accent: string;
+  planSource?: "rules" | "model";
+  planCost?: number;
 };
 
 export type ComposeNo = { ok: false; reason: string };
 
+export type SiteExtract = {
+  name: string;
+  tagline: string;
+  color: string | null;
+  logoHref: string | null;
+  logoSvg: string | null;
+};
+
 export function compose(input: BriefInput, opts?: { fontUrl?: string }): ComposeOk | ComposeNo;
+export function composeWithModel(input: BriefInput, opts?: { fontUrl?: string; siteText?: string }): Promise<ComposeOk | ComposeNo>;
 export function screenText(text: string): { ok: true } | { ok: false; reason: string };
+export function extractSite(html: string, pageUrl: string): SiteExtract;
+export function fetchPublicPage(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<{ url: string; html: string }>;
+export function fetchImageData(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<string | null>;
+export function isBlockedIp(ip: string): boolean;
+export function estimatePlannerCost(brief: { name?: string; problem?: string; features?: string[]; audience?: string; goal?: string; tone?: string; length?: number; proof?: string; hostname?: string }, siteText?: string): { inputTokens: number; outputTokens: number; usd: number };

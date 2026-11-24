@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import s from "./studio.module.css";
 
 type Cue = { t: number; sfx: string };
-type Film = { html: string; duration: number; events: Cue[]; template?: string };
+type Film = { html: string; duration: number; events: Cue[]; goal?: string; length?: number };
 
 const tone = (ctx: AudioContext, when: number, freq: number, dur: number, gain = 0.08, type: OscillatorType = "sine") => {
   const o = ctx.createOscillator();
@@ -49,11 +49,16 @@ function schedule(ctx: AudioContext, cue: Cue, when: number) {
 export default function Studio() {
   const [name, setName] = useState("");
   const [problem, setProblem] = useState("");
+  const [audience, setAudience] = useState("");
   const [featuresText, setFeaturesText] = useState("");
+  const [proof, setProof] = useState("");
   const [accent, setAccent] = useState("#2E4BDB");
+  const [accentSet, setAccentSet] = useState(false);
   const [url, setUrl] = useState("");
   const [logo, setLogo] = useState<string | null>(null);
-  const [look, setLook] = useState("auto");
+  const [goal, setGoal] = useState("launch");
+  const [tone, setTone] = useState("plain");
+  const [length, setLength] = useState<15 | 30 | 45>(30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [film, setFilm] = useState<Film | null>(null);
@@ -123,7 +128,7 @@ export default function Studio() {
       const res = await fetch("/api/studio/film", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, problem, features, accent, url, logo, sample: true, template: look }),
+        body: JSON.stringify({ name, problem, oneLiner: problem, audience, features, proof, accent, accentSet, url, logo, sample: true, goal, tone, length }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -131,7 +136,8 @@ export default function Studio() {
         setError(data.reason || "That preview didn’t come through. Please try again.");
         return;
       }
-      setFilm({ html: data.html, duration: data.duration, events: data.events, template: data.template });
+      if (data.accent && !accentSet) setAccent(data.accent);
+      setFilm({ html: data.html, duration: data.duration, events: data.events, goal: data.goal, length: data.length });
       setAt(0);
     } catch {
       setError("Network error. Please try again.");
@@ -141,7 +147,7 @@ export default function Studio() {
   };
 
   const order = () => {
-    const notes = ["From the studio preview", `Problem: ${problem.trim()}`, "Features:", ...features.map((f) => `- ${f}`), `Colour: ${accent}`].join("\n");
+    const notes = ["From the studio preview", `Problem: ${problem.trim()}`, audience.trim() && `Audience: ${audience.trim()}`, `Goal: ${goal}`, `Length: ${length}s`, "Features:", ...features.map((f) => `- ${f}`), proof.trim() && `Proof: ${proof.trim()}`, `Colour: ${accent}`].filter(Boolean).join("\n");
     sessionStorage.setItem("harkat.studioBrief", JSON.stringify({ name: name.trim(), url: url.trim(), problem: problem.trim(), notes, accent }));
     orderRef.current?.click();
   };
@@ -159,25 +165,43 @@ export default function Studio() {
   return (
     <div className={s.layout}>
       <form className={s.form} onSubmit={(e) => { e.preventDefault(); preview(); }}>
-        <label className={s.field}><span>Product name</span><input className={s.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Northstar" maxLength={48} /></label>
-        <label className={s.field}><span>The problem, in one line</span><input className={s.input} value={problem} onChange={(e) => setProblem(e.target.value)} placeholder="Launch posts take a week and still look generic." maxLength={180} /></label>
-        <label className={s.field}><span>What it does, one per line</span><textarea className={s.area} value={featuresText} onChange={(e) => setFeaturesText(e.target.value)} placeholder={"Brand-matched drafts\nOne shared board\nApproval before anything goes live"} maxLength={320} /></label>
-        <label className={s.field}>
-          <span>Brand colour</span>
-          <span className={s.color}>
-            <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} aria-label="Brand colour" />
-            <input className={s.input} value={accent} onChange={(e) => setAccent(e.target.value)} maxLength={7} aria-label="Hex colour" />
-          </span>
-        </label>
+        <label className={s.field}><span>Product name</span><input className={s.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Keel" maxLength={48} /></label>
+        <label className={s.field}><span>One-liner</span><input className={s.input} value={problem} onChange={(e) => setProblem(e.target.value)} placeholder="Reviews stall before the launch ships." maxLength={180} /></label>
+        <label className={s.field}><span>Audience, optional</span><input className={s.input} value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="Developers" maxLength={48} /></label>
+        <label className={s.field}><span>What it does, one per line</span><textarea className={s.area} value={featuresText} onChange={(e) => setFeaturesText(e.target.value)} placeholder={"Types the change\nFinds the bug\nShows the diff"} maxLength={320} /></label>
+        <label className={s.field}><span>Proof stat, optional</span><input className={s.input} value={proof} onChange={(e) => setProof(e.target.value)} placeholder="Up to 98%" maxLength={32} /></label>
         <div className={s.field}>
-          <span>Look</span>
+          <span>Goal</span>
           <div className={s.looks}>
-            {[["auto", "Auto"], ["launch", "Launch"], ["holo", "Holo"], ["workflow", "Workflow"]].map(([id, label]) => (
-              <button key={id} type="button" className={look === id ? s.lookOn : s.look} onClick={() => setLook(id)}>{label}</button>
+            {[["launch", "Launch"], ["feature", "Feature"], ["explainer", "Explainer"]].map(([id, label]) => (
+              <button key={id} type="button" className={goal === id ? s.lookOn : s.look} onClick={() => setGoal(id)}>{label}</button>
             ))}
           </div>
         </div>
-        <label className={s.field}><span>Product link</span><input className={s.input} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="northstar.example" inputMode="url" /></label>
+        <div className={s.field}>
+          <span>Tone</span>
+          <div className={s.looks}>
+            {[["quiet", "Quiet"], ["plain", "Plain"], ["bold", "Bold"]].map(([id, label]) => (
+              <button key={id} type="button" className={tone === id ? s.lookOn : s.look} onClick={() => setTone(id)}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <div className={s.field}>
+          <span>Length</span>
+          <div className={s.looks}>
+            {([15, 30, 45] as const).map((n) => (
+              <button key={n} type="button" className={length === n ? s.lookOn : s.look} onClick={() => setLength(n)}>{n}s</button>
+            ))}
+          </div>
+        </div>
+        <label className={s.field}>
+          <span>Brand colour</span>
+          <span className={s.color}>
+            <input type="color" value={accent} onChange={(e) => { setAccent(e.target.value); setAccentSet(true); }} aria-label="Brand colour" />
+            <input className={s.input} value={accent} onChange={(e) => { setAccent(e.target.value); setAccentSet(true); }} maxLength={7} aria-label="Hex colour" />
+          </span>
+        </label>
+        <label className={s.field}><span>Product URL</span><input className={s.input} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="keel.example" inputMode="url" /></label>
         <label className={s.field}><span>Logo, optional</span><input className={s.file} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e) => onLogo(e.target.files?.[0])} /></label>
         <p className={s.note}>The picture in the film is a sample interface, labelled as one. Sound is effects only. Harkat never adds music. The film you pay for is still finished by us.</p>
         {error && <p className={s.err} role="alert">{error} {/doesn.t make films/.test(error) && <> <a href="/docs/halal">Why we decline some work</a></>}</p>}
@@ -200,7 +224,7 @@ export default function Studio() {
         {film && (
           <>
             <input className={s.scrub} type="range" min={0} max={film.duration} step={0.05} value={at} aria-label="Film time" onChange={(e) => { stop(); seek(Number(e.target.value)); }} />
-            <p className={s.note}>Look: {film.template}. A sample cut, not the finished film.</p>
+            <p className={s.note}>{film.length ? `${film.length}s ` : ""}{film.goal ?? "launch"}. A sample cut, not the finished film. Sound is effects only.</p>
           </>
         )}
       </div>

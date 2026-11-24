@@ -28,13 +28,12 @@ Open http://localhost:3000. Studio is at http://localhost:3000/studio.
 
 ## Render the sample films
 
-Three fake products, one template each. Every film says it is a sample.
+Two fake products. The scene list follows the brief: goal, length, and the words in each feature.
 
-| Film | Template | What it is based on |
-|------|----------|---------------------|
-| Northstar | Launch | A product tour: problem, name, a dense sample screen, feature cards |
-| Lumen | Holo | The light Pond agents film: a colour pill, a huge word, a glass bar, cards around the name |
-| Relay | Workflow | A stair of cards, then a map of steps |
+| Film | Brief | What you should see |
+|------|--------|---------------------|
+| Keel | 30s launch for a dev tool | A limit beat, a dark code window, a search line, a proof stat |
+| Northwind | 15s feature for a B2B tool | A chat bubble and a toggle, no dark act |
 
 ```bash
 cd films
@@ -47,9 +46,9 @@ npm run sample
 
 That writes `films/samples/<name>/film.html` and `films/samples/<name>/out/<name>-sample.mp4`.
 
-`npm run sample -- --html-only` skips the video. `npm run sample -- northstar` renders one of them.
+`npm run sample -- --html-only` skips the video. `npm run sample -- keel` renders one of them.
 
-In Studio, Auto picks the look from the brief. You can also choose Launch, Holo, or Workflow. A model is optional (`--llm` is not wired on the site; the rules run for free). The model path in the engine can only shorten words already in the brief. It never writes the animation.
+Studio takes a name, one-liner, URL, audience, goal, tone, length, features, and an optional proof stat. A model is optional and off unless `HARKAT_LLM_API_KEY`, `OPENAI_API_KEY`, or `GROQ_API_KEY` is set. It may only return a scene plan. It never writes the animation. With no key, the same rules run every time.
 
 ## Render a hand-made film
 
