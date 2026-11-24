@@ -1,0 +1,20 @@
+.dialog{padding:0;border:0;background:transparent;max-width:none;max-height:none;width:100%;height:100%;margin:0;display:none;align-items:center;justify-content:center;font-family:var(--font-geist),'Geist',system-ui,sans-serif;color:#0D1222}
+.dialog[open]{display:flex}
+.dialog::backdrop{background:rgba(13,18,34,0.12);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fade .3s ease both}
+.full::backdrop{background:#F6F7F9}
+
+/* Plans: deep-blue grainy panel with three white plan cards */
+.box{position:relative;width:min(1180px, calc(100% - 48px));max-height:calc(100dvh - 48px);overflow:auto;box-sizing:border-box;border-radius:32px;
+  background:radial-gradient(130% 110% at 50% -10%, #0B1340 0%, #16258A 35%, #2E4BDB 62%, #7F96F4 85%, #C9D4FC 100%);
+  box-shadow:0 50px 120px rgba(11,19,64,0.3), 0 0 0 1px rgba(255,255,255,0.35) inset;animation:pop .45s cubic-bezier(.2,.7,.2,1) both}
+.close{position:absolute;top:18px;right:18px;z-index:1;width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,0.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.35);color:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+.close:hover{background:rgba(255,255,255,0.24)}
+
+@keyframes pop{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+@media (max-width: 820px){
+  .dialog{align-items:flex-end}
+  .box{width:100%;max-height:94dvh;border-radius:26px 26px 0 0}
+  .close{top:12px;right:12px}
+}

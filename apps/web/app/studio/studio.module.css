@@ -1,0 +1,33 @@
+.layout{display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:48px;align-items:start;padding-bottom:120px}
+.form{display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field span{font-size:13px;color:#5B6275}
+.input,.area{width:100%;border:0;background:#fff;border-radius:12px;box-shadow:0 0 0 1px #E2E5EC;padding:14px 16px;font:inherit;font-size:16px;color:#0D1222}
+.area{min-height:110px;resize:vertical;line-height:1.45}
+.input:focus,.area:focus{outline:none;box-shadow:0 0 0 1px #2E4BDB}
+.color{display:flex;gap:10px;align-items:center}
+.color input[type="color"]{width:48px;height:48px;padding:0;border:0;background:none;cursor:pointer}
+.file{font-size:14px;color:#5B6275}
+.looks{display:flex;flex-wrap:wrap;gap:8px}
+.look,.lookOn{border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.look{background:#fff;color:#0D1222;box-shadow:0 0 0 1px #E2E5EC}
+.lookOn{background:#0D1222;color:#fff}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:6px}
+.primary{display:inline-flex;align-items:stretch;overflow:hidden;border:0;background:#0D1222;color:#fff;border-radius:10px;cursor:pointer;font:inherit;box-shadow:0 1px 2px rgba(13,18,34,.3)}
+.primary span{padding:14px 18px 14px 20px;font-weight:500}
+.primary i{width:52px;background:linear-gradient(90deg,#0D1222 0%,#1F33B0 50%,#4F6CEB 100%)}
+.primary:disabled{opacity:.55;cursor:progress}
+.ghost{border:0;background:#fff;color:#0D1222;border-radius:10px;padding:14px 18px;font:inherit;font-weight:500;box-shadow:0 0 0 1px #E2E5EC;cursor:pointer}
+.ghost:disabled{opacity:.45;cursor:default}
+.note{font-size:14px;line-height:1.5;color:#5B6275;max-width:420px}
+.err{color:#9B2C2C;font-size:14px;line-height:1.45}
+.stageWrap{display:flex;flex-direction:column;gap:14px;position:sticky;top:24px}
+.stage{position:relative;width:100%;aspect-ratio:16/9;background:#0D1222;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(13,18,34,.12)}
+.stage iframe{position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform-origin:0 0;background:#F6F7F9}
+.play{position:absolute;left:16px;bottom:16px;border:0;background:#fff;color:#0D1222;border-radius:999px;padding:10px 16px;font:inherit;font-weight:500;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.scrub{width:100%;accent-color:#2E4BDB}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#B8C6FB;font-size:15px;padding:24px;text-align:center}
+@media (max-width: 900px){
+  .layout{grid-template-columns:1fr;gap:28px;padding-bottom:80px}
+  .stageWrap{position:static}
+}

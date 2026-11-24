@@ -1,0 +1,23 @@
+/* Placeholder film scenes (sized for a ~680px-wide player) */
+.white{width:100%;height:100%;background:#FFFFFF;display:flex;align-items:center;justify-content:center}
+.fill{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.big{font-size:36px;line-height:1.02;font-weight:500;letter-spacing:-0.055em;text-align:center}
+.blue{color:#2E4BDB}
+.chip{background:#F1F3F7;border-radius:6px;padding:7px 11px;font-size:13px}
+.chipOn{background:#2E4BDB;color:#FFFFFF}
+.chat{background:#FFFFFF;border-radius:16px;padding:18px;width:320px;display:flex;flex-direction:column;gap:12px;box-shadow:0 30px 60px rgba(46,75,219,0.18)}
+.bubbleIn{align-self:flex-start;background:#F1F3F7;border-radius:12px 12px 12px 4px;padding:9px 13px;font-size:14px}
+.bubbleOut{align-self:flex-end;background:#2E4BDB;color:#FFFFFF;border-radius:12px 12px 4px 12px;padding:9px 13px;font-size:14px}
+.notif{background:#FFFFFF;border-radius:16px;padding:18px;width:340px;display:flex;gap:14px;box-shadow:0 0 0 1px #E2E5EC, 0 20px 40px rgba(13,18,34,0.06)}
+.avatar{width:40px;height:40px;flex-shrink:0;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#2E4BDB}
+.meet{font-size:48px;font-weight:500;letter-spacing:-0.055em}
+
+@media (max-width: 860px){
+  .big{font-size:24px}
+  .chip{font-size:11px;padding:5px 8px}
+  .chat{width:220px;padding:12px;gap:8px;border-radius:12px}
+  .bubbleIn,.bubbleOut{font-size:12px;padding:6px 10px}
+  .notif{width:250px;padding:12px;gap:10px}
+  .notif .avatar{width:32px;height:32px}
+  .meet{font-size:34px}
+}

@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:G;src:url(../_template/lib/Geist-Variable.woff2) format('woff2');font-weight:100 900}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#F7F8FA;font-family:G,sans-serif;color:#0D1222;-webkit-font-smoothing:antialiased}
+.a{position:absolute}.L{position:absolute;inset:0;overflow:hidden}
+.rw{position:absolute;left:50%;white-space:nowrap}
+.rw span{position:absolute;top:0;display:inline-block;font-weight:600;letter-spacing:-.055em;transform-origin:50% 80%}
+.blue{color:#2E4BDB}
+</style></head><body>
+<!--
+  Harkat film scaffold. Copy this folder to films/<client-film>/ and edit.
+  Structure: hook in first 3s → product story with real, rich UI → CTA with the URL at the end. 30–40s.
+  Rules: no music, no images of women (abstract avatars/initials), no 3D, real logos (simple-icons), client colours.
+-->
+<svg width="0" height="0" style="position:absolute"><defs>
+<clipPath id="cp1" clipPathUnits="userSpaceOnUse"><path id="bp1" d=""/></clipPath>
+</defs></svg>
+
+<!-- Scene 1: hook -->
+<div id="L1" class="L" style="background:radial-gradient(130% 110% at 50% -10%, #0B1340 0%, #16258A 40%, #2E4BDB 75%, #7F96F4 100%)">
+  <div id="t1" class="rw" style="top:440px;font-size:150px;height:170px;color:#fff"></div>
+</div>
+
+<!-- Scene 2: revealed through a blob portal, framed by the 2D camera -->
+<div id="L2" class="L" style="clip-path:url(#cp1);background:#F7F8FA">
+  <div id="stage" class="a" style="left:0;top:0;width:1920px;height:1080px">
+    <div class="a" style="left:560px;top:340px;width:800px;height:400px;background:#fff;border-radius:28px;box-shadow:0 0 0 1px #E8EBF1,0 30px 60px rgba(13,18,34,.08);display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:600;letter-spacing:-.05em">Your real UI here</div>
+  </div>
+  <div id="cta" class="rw" style="top:900px;font-size:64px;height:80px"></div>
+</div>
+
+<script src="../_template/lib/motion.js"></script>
+<script>
+window.DUR = 8; // seconds — render.mjs reads this
+
+const T1 = mkReflow($('t1'), [['Your'], ['product,'], ['in'], ['motion.', 'blue']]);
+const CTA = mkReflow($('cta'), [['yourproduct.com', 'blue']]);
+
+function render(t) {
+  // Scene 1 hook
+  reflow(T1, t, [.05, .3, .55, .85]);
+
+  // Cut at 2.2s: blob portal into scene 2
+  const p = q5(seg(t, 2.2, 2.9));
+  $('bp1').setAttribute('d', t < 2.2 ? 'M0,0Z' : blob(1560, 540, lerp(0, 2600, p), t, .2 * (1 - p) + .04));
+  $('L1').style.transform = `scale(${lerp(1, .92, p)})`;
+
+  // 2D camera: push in, then pan
+  camera($('stage'), t, [
+    { t: 2.2, x: 960, y: 540, s: .85 },
+    { t: 4.0, x: 960, y: 540, s: 1.1 },
+    { t: 6.0, x: 1060, y: 520, s: 1.25 },
+  ]);
+
+  // End card with URL
+  reflow(CTA, t, [6.2]);
+}
+window.render = render;
+document.fonts.ready.then(() => { window.READY = true; });
+</script>
+</body></html>

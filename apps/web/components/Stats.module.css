@@ -1,0 +1,18 @@
+.card{position:relative;overflow:hidden;background:#FFFFFF;border-radius:28px;box-shadow:0 0 0 1px #E2E5EC, 0 24px 60px rgba(46,75,219,0.06);display:grid;grid-template-columns:repeat(3, 1fr)}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(40% 70% at 100% 100%, rgba(46,75,219,0.07) 0%, rgba(46,75,219,0) 70%)}
+.cell{position:relative;padding:40px 40px 44px;display:flex;flex-direction:column;gap:14px}
+.cell + .cell{border-left:1px solid #EEF0F4}
+.tag{align-self:flex-start;font-size:11.5px;letter-spacing:0.04em;text-transform:uppercase;color:#5B6275;background:#F3F4F7;border-radius:999px;padding:5px 10px}
+.num{display:flex;align-items:baseline;font-size:76px;line-height:1;font-weight:400;letter-spacing:-0.06em;color:#0D1222;font-variant-numeric:tabular-nums}
+.num small{margin-left:4px;font-size:.42em;letter-spacing:-0.02em;color:#2E4BDB}
+.blue{color:#2E4BDB}
+.label{font-size:15px;line-height:1.5;color:#5B6275}
+
+@media (max-width: 860px){
+  .card{grid-template-columns:1fr;border-radius:22px}
+  .cell{display:grid;grid-template-columns:150px 1fr;grid-template-areas:"num tag" "num label";align-items:center;column-gap:20px;row-gap:6px;padding:22px 22px}
+  .cell + .cell{border-left:0;border-top:1px solid #EEF0F4}
+  .tag{grid-area:tag;align-self:end;justify-self:start}
+  .num{grid-area:num;font-size:46px}
+  .label{grid-area:label;align-self:start;font-size:14px}
+}

@@ -1,0 +1,48 @@
+.wrap{position:relative;display:flex;flex-direction:column;gap:32px;padding:44px 40px 32px}
+.head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;color:#FFFFFF}
+.title{margin:0;font-size:56px;line-height:1;font-weight:500;letter-spacing:-0.06em}
+.sub{margin:0;font-size:17px;color:rgba(255,255,255,0.75)}
+
+.plans{display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;align-items:stretch;padding-top:14px}
+.plan{position:relative;display:flex;flex-direction:column;gap:14px;padding:26px 24px 28px;background:#FFFFFF;border-radius:22px;box-shadow:0 30px 60px rgba(11,19,64,0.18);animation:rise .6s cubic-bezier(.2,.7,.2,1) both;transition:translate .3s cubic-bezier(.2,.7,.2,1)}
+.plan:hover{translate:0 -4px}
+.hot{z-index:1;translate:0 -6px;box-shadow:0 0 0 2px #2E4BDB, 0 0 0 7px rgba(184,198,251,0.45), 0 44px 90px rgba(11,19,64,0.38)}
+.hot:hover{translate:0 -10px}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.planTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.name{font-size:18px;font-weight:500;letter-spacing:-0.02em}
+.badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:500;letter-spacing:0.01em;color:#FFFFFF;background:linear-gradient(135deg, #1F33B0, #4F6CEB);border-radius:999px;padding:5px 12px;white-space:nowrap;box-shadow:0 0 0 3px #FFFFFF, 0 8px 18px rgba(46,75,219,0.35)}
+.price{display:flex;align-items:baseline;font-size:56px;line-height:1;font-weight:500;letter-spacing:-0.06em}
+.cur{font-size:28px;margin-right:2px;align-self:flex-start;margin-top:6px}
+.per{margin-left:8px;font-size:14px;font-weight:400;letter-spacing:0;color:#6B7183}
+.blurb{margin:0;font-size:15px;line-height:1.5;color:#5B6275;min-height:45px}
+
+.cta,.ctaGhost{display:flex;align-items:stretch;border:0;padding:0;font:inherit;cursor:pointer;border-radius:10px;overflow:hidden}
+.cta{background:#0D1222;color:#FFFFFF;box-shadow:0 1px 2px rgba(13,18,34,0.3), 0 10px 24px rgba(13,18,34,0.16)}
+.ctaGhost{background:#FFFFFF;color:#0D1222;box-shadow:0 0 0 1px #E2E5EC}
+.ctaGhost:hover{box-shadow:0 0 0 1px #B8C6FB}
+.ctaLabel{flex:1;padding:13px 16px;font-weight:500;font-size:15px;text-align:left}
+.ctaKey{width:48px;display:flex;align-items:center;justify-content:center}
+.cta .ctaKey{background:linear-gradient(90deg, #0D1222 0%, #1F33B0 50%, #4F6CEB 100%)}
+.ctaGhost .ctaKey{background:linear-gradient(90deg, #FFFFFF 0%, #EEF2FF 100%)}
+
+.specs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.spec{font-size:12.5px;color:#3C4253;background:#F1F3F7;border-radius:7px;padding:5px 9px}
+.spec b{font-weight:500;color:#0D1222}
+.hot .spec{background:#EEF2FF;color:#1F33B0}
+.hot .spec b{color:#1F33B0}
+.perks{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
+.perks li{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.35;color:#3C4253}
+.perks svg{flex-shrink:0}
+.delivery{display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:14px;border-top:1px dashed #E2E5EC;font-size:13px;color:#5B6275}
+
+.foot{margin:0;text-align:center;font-size:13px;color:#3C4253}
+
+@media (max-width: 960px){
+  .wrap{padding:28px 14px 22px;gap:22px}
+  .title{font-size:38px}
+  .sub{font-size:15px}
+  .plans{grid-template-columns:1fr;gap:12px}
+  .price{font-size:44px}
+  .blurb{min-height:0}
+}

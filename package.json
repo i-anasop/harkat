@@ -1,0 +1,21 @@
+{
+  "name": "harkat",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/engine"
+  ],
+  "overrides": {
+    "zod": "4.6.7",
+    "@vercel/cli-config": "0.4.0",
+    "@vercel/oidc": "4.0.9"
+  },
+  "scripts": {
+    "dev": "npm --prefix apps/web run dev",
+    "build": "npm --prefix apps/web run build",
+    "lint": "npm --prefix apps/web run lint",
+    "typecheck": "npm --prefix apps/web run typecheck",
+    "sample": "node packages/engine/src/cli.js sample",
+    "test": "node --test packages/engine/test/*.js test/*.js"
+  }
+}

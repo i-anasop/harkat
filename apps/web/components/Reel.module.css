@@ -1,0 +1,129 @@
+.reel{--p:0;position:relative;height:4600px;margin:0 calc(50% - 50vw);padding:0 40px;box-sizing:border-box;
+  background:linear-gradient(180deg, #F6F7F9 0%, #EEF3FD 5%, #DCE8FF 12%, #D6E5FF 16%, #D6E5FF 84%, #DCE8FF 88%, #EEF3FD 95%, #F6F7F9 100%)}
+/* The glow lives on the sticky layer, so it stays still while the films change. */
+.reelin{position:sticky;top:0;height:100vh;min-height:620px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;padding:40px 0;margin:0 -40px}
+.reelin > *{position:relative}
+/* Glow and grain melt into the page at both ends — white, then a hint of blue, then blue. No hard edge. */
+.reelin > svg:first-child{position:absolute;-webkit-mask-image:linear-gradient(180deg, transparent 0, #000 35%, #000 65%, transparent 100%);mask-image:linear-gradient(180deg, transparent 0, #000 35%, #000 65%, transparent 100%)}
+.reelin::before{content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(38% 42% at 50% 50%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%),
+    radial-gradient(48% 55% at 6% 92%, rgba(56,132,255,0.5) 0%, rgba(56,132,255,0) 70%),
+    radial-gradient(45% 50% at 96% 8%, rgba(98,122,255,0.42) 0%, rgba(98,122,255,0) 70%),
+    radial-gradient(40% 40% at 72% 96%, rgba(120,200,255,0.55) 0%, rgba(120,200,255,0) 70%),
+    radial-gradient(36% 36% at 20% 6%, rgba(160,215,255,0.6) 0%, rgba(160,215,255,0) 70%),
+    linear-gradient(160deg, #EAF3FF 0%, #D2E3FF 48%, #BED3FF 100%);
+  -webkit-mask-image:linear-gradient(180deg, transparent 0, rgba(0,0,0,0.35) 12%, #000 30%, #000 70%, rgba(0,0,0,0.35) 88%, transparent 100%);mask-image:linear-gradient(180deg, transparent 0, rgba(0,0,0,0.35) 12%, #000 30%, #000 70%, rgba(0,0,0,0.35) 88%, transparent 100%)}
+.frame{background:#FFFFFF;border-radius:22px;padding:8px;box-shadow:0 0 0 1px rgba(255,255,255,0.9), 0 40px 90px rgba(31,51,176,0.22)}
+.screen{position:relative;aspect-ratio:16 / 9;border-radius:16px;overflow:hidden;background:#FFFFFF}
+.video{display:block;width:100%;height:100%;object-fit:cover}
+
+/* Stage: the film travels left <-> right; its description takes the other side. */
+.stage{position:relative;width:min(calc(100% - 80px), 1160px)}
+.player{position:relative;width:64%;will-change:transform}
+/* Ghost frames that trail the player while it travels */
+.echo{position:absolute;top:0;bottom:0;left:0;width:64%;border-radius:22px;background:rgba(255,255,255,0.32);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.8);opacity:0;will-change:transform,opacity}
+.copy{position:absolute;top:0;bottom:0;width:30%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:18px;opacity:0;visibility:hidden}
+.right{right:0}
+.left{left:0}
+.title{margin:0;font-size:46px;line-height:1;font-weight:500;letter-spacing:-0.055em}
+.about{margin:0;font-size:17px;line-height:1.6;color:#3C4253;max-width:340px}
+.kindRow{display:flex;align-items:center;gap:12px}
+.kind{font-size:14px;color:#5B6275}
+.client{height:18px;width:auto;opacity:.8;padding-left:12px;border-left:1px solid rgba(13,18,34,0.15)}
+.credit{margin-top:4px;font-size:13px;color:rgba(13,18,34,0.5);text-decoration:underline;text-decoration-color:rgba(13,18,34,0.25);text-underline-offset:4px;transition:color .2s, text-decoration-color .2s}
+.credit:hover{color:#0D1222;text-decoration-color:#0D1222}
+
+/* first film visible by default (and with reduced motion) */
+.sc{position:absolute;inset:0;opacity:0}.sc1{opacity:1}
+.tx1{opacity:1;visibility:visible}
+
+/* Timeline (--p: 0→1, smoothed in Reel.tsx). Long moves: 10.75–29.75%, 40.5–59.5%, 70.25–89.25%.
+   The frame eases out of each hold, dips to .94 mid-move and eases into the next; four ghost frames trail it. */
+@keyframes pos{
+  0%,10.75%{transform:none;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  20.25%{transform:translateX(28.125%) scale(.94);animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  29.75%,40.5%{transform:translateX(56.25%);animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  50%{transform:translateX(28.125%) scale(.94);animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  59.5%,70.25%{transform:none;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  79.75%{transform:translateX(28.125%) scale(.94);animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  89.25%,100%{transform:translateX(56.25%);}
+}
+@keyframes echo1{
+  0%,11.95%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  21.45%{transform:translateX(28.125%) scale(.94);opacity:0.5;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  30.95%,41.7%{transform:translateX(56.25%);opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  51.2%{transform:translateX(28.125%) scale(.94);opacity:0.5;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  60.7%,71.45%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  80.95%{transform:translateX(28.125%) scale(.94);opacity:0.5;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  90.45%,100%{transform:translateX(56.25%);opacity:0;}
+}
+@keyframes echo2{
+  0%,13.15%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  22.65%{transform:translateX(28.125%) scale(.94);opacity:0.36;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  32.15%,42.9%{transform:translateX(56.25%);opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  52.4%{transform:translateX(28.125%) scale(.94);opacity:0.36;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  61.9%,72.65%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  82.15%{transform:translateX(28.125%) scale(.94);opacity:0.36;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  91.65%,100%{transform:translateX(56.25%);opacity:0;}
+}
+@keyframes echo3{
+  0%,14.35%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  23.85%{transform:translateX(28.125%) scale(.94);opacity:0.24;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  33.35%,44.1%{transform:translateX(56.25%);opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  53.6%{transform:translateX(28.125%) scale(.94);opacity:0.24;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  63.1%,73.85%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  83.35%{transform:translateX(28.125%) scale(.94);opacity:0.24;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  92.85%,100%{transform:translateX(56.25%);opacity:0;}
+}
+@keyframes echo4{
+  0%,15.55%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  25.05%{transform:translateX(28.125%) scale(.94);opacity:0.14;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  34.55%,45.3%{transform:translateX(56.25%);opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  54.8%{transform:translateX(28.125%) scale(.94);opacity:0.14;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  64.3%,75.05%{transform:none;opacity:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+  84.55%{transform:translateX(28.125%) scale(.94);opacity:0.14;animation-timing-function:cubic-bezier(.1,.5,.4,1)}
+  94.05%,100%{transform:translateX(56.25%);opacity:0;}
+}
+@keyframes sv1{0%,17.25%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.65,0,.35,1)}23.25%,100%{opacity:1;transform:translateX(-100%)}}
+@keyframes sv2{0%,17.25%{opacity:1;transform:translateX(100%);animation-timing-function:cubic-bezier(.65,0,.35,1)}23.25%,47%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.65,0,.35,1)}53%,100%{opacity:1;transform:translateX(100%)}}
+@keyframes sv3{0%,47%{opacity:1;transform:translateX(-100%);animation-timing-function:cubic-bezier(.65,0,.35,1)}53%,76.75%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.65,0,.35,1)}82.75%,100%{opacity:1;transform:translateX(-100%)}}
+@keyframes sv4{0%,76.75%{opacity:1;transform:translateX(100%);animation-timing-function:cubic-bezier(.65,0,.35,1)}82.75%,100%{opacity:1;transform:none}}
+@keyframes tx1{0%,12.25%{opacity:1;visibility:visible;transform:none}16.25%,100%{opacity:0;visibility:hidden;transform:translateY(-14px)}}
+@keyframes tx2{0%,24.25%{opacity:0;visibility:hidden;transform:translateY(14px)}28.25%,42%{opacity:1;visibility:visible;transform:none}46%,100%{opacity:0;visibility:hidden;transform:translateY(-14px)}}
+@keyframes tx3{0%,54%{opacity:0;visibility:hidden;transform:translateY(14px)}58%,71.75%{opacity:1;visibility:visible;transform:none}75.75%,100%{opacity:0;visibility:hidden;transform:translateY(-14px)}}
+@keyframes tx4{0%,83.75%{opacity:0;visibility:hidden;transform:translateY(14px)}87.75%,100%{opacity:1;visibility:visible;transform:none}}
+
+.player{animation-name:pos}
+.e1{animation-name:echo1}.e2{animation-name:echo2}.e3{animation-name:echo3}.e4{animation-name:echo4}
+.sc1{animation-name:sv1}.sc2{animation-name:sv2}.sc3{animation-name:sv3}.sc4{animation-name:sv4}
+.tx1{animation-name:tx1}.tx2{animation-name:tx2}.tx3{animation-name:tx3}.tx4{animation-name:tx4}
+/* Paused animations scrubbed by --p (a 16s timeline: delay = -p × 16s) */
+.player,.echo,.sc,.copy{animation-duration:16s;animation-timing-function:linear;animation-fill-mode:both;animation-play-state:paused;animation-delay:calc(var(--p) * -16s)}
+
+@media (max-width: 860px){
+  .reel{height:3000px;padding:0 16px}
+  .reelin{gap:20px;padding:24px 0;margin:0 -16px;min-height:0}
+  .stage{width:calc(100% - 32px);display:grid;row-gap:24px}
+  .player{width:100%;animation-name:none}
+  .echo{display:none}
+  .copy{position:relative;grid-area:2 / 1;width:auto;gap:12px;justify-content:flex-start}
+  .title{font-size:36px}
+  .about{font-size:15px}
+  .frame{border-radius:16px;padding:5px;box-sizing:border-box}
+  .screen{border-radius:12px}
+}
+
+/* Reduced motion (e.g. Windows "Animation effects" off): the global rule switches every animation
+   off, which froze the reel on the first film. The reel only moves as the visitor scrolls, so keep
+   that scrubbing, but drop the decorative ghost frames. */
+@media (prefers-reduced-motion: reduce){
+  .player{animation-name:pos !important}
+  .sc1{animation-name:sv1 !important}.sc2{animation-name:sv2 !important}.sc3{animation-name:sv3 !important}.sc4{animation-name:sv4 !important}
+  .tx1{animation-name:tx1 !important}.tx2{animation-name:tx2 !important}.tx3{animation-name:tx3 !important}.tx4{animation-name:tx4 !important}
+  .player,.sc,.copy{animation-duration:16s !important;animation-timing-function:linear !important;animation-fill-mode:both !important;animation-play-state:paused !important;animation-delay:calc(var(--p) * -16s) !important}
+  .echo{display:none}
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 860px){
+  .player{animation-name:none !important}
+}

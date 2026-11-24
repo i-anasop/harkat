@@ -1,0 +1,17 @@
+{
+  "video": "out/harkat-hero.mp4",
+  "out": "out/harkat-hero-sfx.mp4",
+  "target": -22,
+  "_note": "SFX names are placeholders until the Pond Better SFX Kit is unpacked into films/sfx/",
+  "cues": [
+    { "t": 1.8,  "sfx": "TODO/whoosh", "align": "peak", "_at": "blob portal" },
+    { "t": 6.4,  "sfx": "TODO/morph",  "_at": "pin morph" },
+    { "t": 8.7,  "sfx": "TODO/ui-on",  "_at": "UI comes alive" },
+    { "t": 10.5, "sfx": "TODO/click",  "_at": "click / toast" },
+    { "t": 11.3, "sfx": "TODO/whoosh-soft", "align": "peak", "_at": "morph to player" },
+    { "t": 12.6, "sfx": "TODO/pop",    "_at": "logo pops + Posted chips" },
+    { "t": 15.9, "sfx": "TODO/whoosh", "align": "peak", "_at": "blob portal" },
+    { "t": 16.5, "sfx": "TODO/chime",  "_at": "logo bloom + CTA" },
+    { "t": 17.2, "sfx": "TODO/thud",   "_at": "CTA lands" }
+  ]
+}

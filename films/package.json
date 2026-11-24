@@ -1,0 +1,15 @@
+{
+  "name": "harkat-films",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node _template/render.mjs",
+    "sfx": "node _template/sfx.mjs",
+    "posters": "node _template/posters.mjs",
+    "new": "node -e \"const [,n]=process.argv;require('fs').cpSync('_template/film.html',n+'/film.html');console.log('films/'+n+'/film.html')\" --"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "playwright": "^1.55.0"
+  }
+}

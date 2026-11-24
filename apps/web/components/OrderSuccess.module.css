@@ -1,0 +1,25 @@
+/* Base styles are the final state, so reduced-motion users see the finished screen. */
+.sheet{position:fixed;inset:0;z-index:3;background:#F6F7F9;display:flex;align-items:center;justify-content:center;overflow:auto;animation:fade .4s ease both}
+.sheet::before{content:"";position:absolute;inset:0;background:radial-gradient(45% 45% at 50% 35%, rgba(184,198,251,0.5), rgba(184,198,251,0));pointer-events:none}
+.inner{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:40px 24px;max-width:520px}
+
+.badge{position:relative;width:84px;height:84px;margin-bottom:14px;border-radius:24px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #E2E5EC, 0 20px 44px rgba(46,75,219,0.16);animation:pop .6s .1s cubic-bezier(.3,1.4,.5,1) both}
+.mark{animation:spin 1.1s .2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes spin{from{transform:rotate(-120deg) scale(.6)}to{transform:none}}
+.tick{position:absolute;right:-6px;bottom:-6px;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, #1F33B0, #4F6CEB);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #F6F7F9;animation:pop .45s .7s cubic-bezier(.3,1.5,.5,1) both}
+.check{stroke-dasharray:30;stroke-dashoffset:0;animation:draw .4s .95s cubic-bezier(.65,0,.35,1) both}
+@keyframes draw{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
+
+.eyebrow,.title,.text,.done{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+.eyebrow{font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#2E4BDB;animation-delay:.5s}
+.title{margin:0;font-size:44px;line-height:1.02;font-weight:500;letter-spacing:-0.055em;animation-delay:.58s}
+.text{margin:0;font-size:17px;line-height:1.55;color:#5B6275;animation-delay:.66s}
+.done{margin-top:18px;border:0;font:inherit;font-size:15px;font-weight:500;cursor:pointer;background:#0D1222;color:#FFFFFF;border-radius:10px;padding:13px 34px;box-shadow:0 1px 2px rgba(13,18,34,0.3), 0 10px 24px rgba(13,18,34,0.14);animation-delay:.82s}
+.done:focus-visible{outline:none;box-shadow:0 0 0 2px #FFFFFF, 0 0 0 4px #2E4BDB}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (max-width: 760px){
+  .title{font-size:32px}
+  .text{font-size:15px}
+}

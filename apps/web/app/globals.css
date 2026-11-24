@@ -1,0 +1,61 @@
+/* Ported as-is from design/*.html (shared <style> block). */
+body{margin:0;background:#F6F7F9}
+a{color:#0D1222;text-decoration:none}
+.lnk{border-bottom:1px solid rgba(13,18,34,.3);padding-bottom:3px;transition:border-color .2s}
+.lnk:hover{border-color:#0D1222}
+.nav a.nl{color:#3C4253;transition:color .2s}.nav a.nl:hover{color:#0D1222}
+.btn{transition:transform .2s ease, box-shadow .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:hover .key svg{transform:translateX(2px)}
+.key svg{transition:transform .2s ease}
+@keyframes strip{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.strip{animation:strip 40s linear infinite}
+.row{transition:background .25s ease}.row:hover{background:#FFFFFF}
+details summary{list-style:none;cursor:pointer}details summary::-webkit-details-marker{display:none}
+details[open] .plus{transform:rotate(45deg)}.plus{transition:transform .2s ease}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{0%,100%{background-position:50% 0%}50%{background-position:50% 45%}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes toast{0%,12%{opacity:0;transform:translateY(14px)}20%,85%{opacity:1;transform:none}95%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes loopin{0%{opacity:0;transform:translateY(14px)}15%,80%{opacity:1;transform:none}95%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes scrub{from{width:0}to{width:100%}}
+@keyframes eq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.r1{animation:rise 1.1s cubic-bezier(.2,.7,.2,1) both}
+.r2{animation:rise 1.1s .15s cubic-bezier(.2,.7,.2,1) both}
+.r3{animation:rise 1.1s .3s cubic-bezier(.2,.7,.2,1) both}
+.r4{animation:rise 1.2s .45s cubic-bezier(.2,.7,.2,1) both}
+.spin{animation:spin 30s linear infinite;transform-origin:50% 50%}
+.soft{background:radial-gradient(120% 95% at 50% -15%, #4F6CEB 0%, #7F96F4 28%, #B8C6FB 55%, #E2E8FE 80%, #F6F7F9 100%);background-size:100% 140%;animation:drift 18s ease-in-out infinite}
+.float1{animation:float 6s ease-in-out infinite}
+.float2{animation:float 7s 1s ease-in-out infinite}
+.toast{animation:toast 6s ease-in-out infinite}
+.loop{animation:loopin 5s ease-in-out infinite}
+.loop2{animation:loopin 5s 1.2s ease-in-out infinite}
+.scrub{animation:scrub 5s linear infinite}
+.eq{display:block;width:3px;border-radius:2px;background:#2E4BDB;transform-origin:50% 100%;animation:eq 1s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+
+/* Page shell (outer wrappers from the designs) */
+.page{background:#F6F7F9;color:#0D1222;font-family:var(--font-geist),'Geist',system-ui,sans-serif;box-sizing:border-box;overflow-x:clip}
+.wrap{max-width:1240px;margin:0 auto;padding:0 40px;box-sizing:border-box}
+.mono{font-family:var(--font-geist-mono),'Geist Mono',monospace}
+.eyebrow{font-size:14px;letter-spacing:0.06em;text-transform:uppercase;color:#6B7183}
+
+/* Inner-page header (Work / Results / Process) */
+.phead{display:flex;flex-direction:column;gap:26px;padding:110px 0 80px}
+.phead-label{font-size:14px;color:#5B6275}
+.phead h1{margin:0;font-size:104px;line-height:0.92;font-weight:500;letter-spacing:-0.065em;max-width:1000px}
+.phead p{margin:0;font-size:19px;line-height:1.55;color:#5B6275;max-width:460px}
+.muted-h{color:#7D8496}
+
+@media (max-width: 720px){
+  .wrap{padding:0 16px}
+  .phead{gap:20px;padding:64px 0 48px}
+  .phead h1{font-size:clamp(48px, 14vw, 104px)}
+  .phead p{font-size:17px}
+}
+
+/* No visible page scrollbar (scrolling still works). */
+html{scrollbar-width:none}
+html::-webkit-scrollbar{display:none}
