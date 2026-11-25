@@ -1,13 +1,13 @@
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { compose, SAMPLES } from "./index.js";
+import { accentFromHtml, accentFromPng, compose, extractSite, fetchImageData, fetchPublicPage, SAMPLES } from "./index.js";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const names = process.argv.slice(2).filter((a) => !a.startsWith("--") && a !== "sample");
 const list = names.length ? SAMPLES.filter((s) => names.includes(s.id)) : SAMPLES;
 if (!list.length) {
-  console.error("No matching sample. Use keel or northwind.");
+  console.error("No matching sample. Use keel or linear.");
   process.exit(1);
 }
 
@@ -18,10 +18,29 @@ function run(cmd, args) {
   });
 }
 
-for (const brief of list) {
-  const dir = path.join(root, "films/samples", brief.id);
-  const silent = path.join(dir, `out/${brief.id}-silent.mp4`);
-  const final = path.join(dir, `out/${brief.id}-sample.mp4`);
+async function liveBrief(brief) {
+  if (!brief.live || process.env.HARKAT_SKIP_LIVE === "1") return brief;
+  try {
+    const page = await fetchPublicPage(brief.url, { maxBytes: 1_500_000, timeout: 8000 });
+    const site = extractSite(page.html, page.url);
+    let logo = null;
+    if (site.logoHref) logo = await fetchImageData(site.logoHref);
+    if (!logo && site.logoSvg) logo = `data:image/svg+xml,${encodeURIComponent(site.logoSvg)}`;
+    const fromLogo = !site.color && logo?.startsWith("data:image/png") ? accentFromPng(logo) : null;
+    const accent = site.color || fromLogo || accentFromHtml(page.html) || brief.accent;
+    console.log(`${brief.id} live ${site.name || brief.name} ${accent} logo ${logo ? "yes" : "no"}`);
+    return { ...brief, name: site.name || brief.name, accent, logo: logo || null };
+  } catch (err) {
+    console.error(`${brief.id} live scrape failed: ${err.message}`);
+    return { ...brief, logo: null };
+  }
+}
+
+for (const raw of list) {
+  const brief = await liveBrief(raw);
+  const dir = path.join(root, "films/samples", raw.id);
+  const silent = path.join(dir, `out/${raw.id}-silent.mp4`);
+  const final = path.join(dir, `out/${raw.id}-sample.mp4`);
   mkdirSync(dir, { recursive: true });
   const made = compose(brief, { fontUrl: "../../_template/lib/Geist-Variable.woff2" });
   if (!made.ok) {

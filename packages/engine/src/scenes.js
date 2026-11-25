@@ -1,7 +1,8 @@
 import { esc, lineSize, wordsHtml } from "./copy.js";
-import { assertClear, contentRatio, FRAME_H, FRAME_W, row, stack } from "./layout.js";
+import { assertClear, contentRatio, FRAME_H, FRAME_W, stack } from "./layout.js";
 
-const TX = ["scale", "morph", "whip", "cut"];
+const LONE = new Set(["the", "a", "an", "and", "or", "to", "of", "for", "in", "on", "before", "with"]);
+const TX = ["scale", "whip", "cut", "scale"];
 
 function zoomOf(brief) {
   if (brief.tone === "bold") return 0.05;
@@ -38,14 +39,33 @@ function wordsIn(elements) {
 
 function finish(kind, play, mode, elements, brief) {
   assertClear(elements);
+  for (const el of elements) {
+    const text = String(el.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const bits = text ? text.split(" ") : [];
+    if (bits.length === 1 && LONE.has(bits[0].toLowerCase())) {
+      throw new Error(`A card cannot be only the word “${bits[0]}”. The film was not rendered.`);
+    }
+  }
   const words = wordsIn(elements);
   if (words.length > 6) throw new Error(`Too many words on one beat (${words.length}). The film was not rendered.`);
   return { kind, play, mode, elements, words, zoom: zoomOf(brief), ratio: contentRatio(elements) };
 }
 
+function captionWords(brief, words) {
+  const used = new Set(words.map((word) => word.toLowerCase()));
+  const name = String(brief.name || "").split(" ").filter((word) => word && !used.has(word.toLowerCase())).slice(0, 2);
+  if (name.length && words.length + name.length <= 6) return name;
+  const audience = String(brief.audience || "").split(" ").filter((word) => word && !used.has(word.toLowerCase())).slice(0, 2);
+  if (audience.length && words.length + audience.length <= 6) return audience;
+  return [];
+}
+
 function typeShot(kind, words, highlight, brief) {
-  const line = lineEl(`${kind}-line`, words, "headline", 118, 800, highlight);
-  return finish(kind, "", "light", stack([line]), brief);
+  const items = [];
+  const caption = captionWords(brief, words);
+  if (caption.length) items.push(lineEl(`${kind}-cap`, caption, "sub", 28, 400, ""));
+  items.push({ ...lineEl(`${kind}-line`, words, "headline", 118, 800, highlight), seed: !highlight });
+  return { ...finish(kind, "", "light", stack(items, 64), brief), seedBg: highlight ? "accent" : "paper" };
 }
 
 function limitShot(brief) {
@@ -58,9 +78,10 @@ function limitShot(brief) {
     h: 250,
     area: true,
     at: 0.12,
+    seed: true,
     html: `<div class="meter"><i data-h="36"></i><i data-h="58"></i><i data-h="100" data-hot="1"></i></div>`,
   };
-  return finish("limit", "bars", "light", stack([line, card], 80), brief);
+  return { ...finish("limit", "bars", "light", stack([line, card], 80), brief), seedBg: "paper" };
 }
 
 function introShot(brief, name) {
@@ -84,39 +105,55 @@ function proofShot(scene, brief) {
   return typeShot("proof", words, scene.highlight, brief);
 }
 
+function splitPhrase(copy) {
+  const words = copy.split(" ").filter(Boolean);
+  const tail = words.at(-1) || "";
+  if (words.length > 1 && !LONE.has(tail.toLowerCase())) return [words.slice(0, -1).join(" "), tail];
+  return [copy, ""];
+}
+
 function vignette(scene, brief) {
   const copy = scene.copy;
   const v = scene.vignette || "cards";
   if (v === "code") {
-    const words = copy.split(" ");
-    const mid = Math.max(1, Math.ceil(words.length / 2));
-    const a = words.slice(0, mid).join(" ");
-    const b = words.slice(mid).join(" ");
-    const second = b ? `<span data-line="${esc(b)}">${esc(b)}</span>` : "";
+    const [command, result] = splitPhrase(copy);
+    const found = result ? `<span class="result" data-role="ui" data-at="1.25">${esc(result)}</span>` : "";
     const card = placeCenter({
       id: "code",
       role: "shape",
       className: "card codeCard",
-      w: 860,
-      h: 300,
+      w: 880,
+      h: 320,
       area: true,
       at: 0.08,
-      html: `<pre class="code" data-role="ui"><span data-line="${esc(a)}">${esc(a)}</span>${second}</pre>`,
+      seed: true,
+      html: `<pre class="code" data-role="ui"><span data-line="${esc(command)}">${esc(command)}</span>${found}</pre>`,
     });
-    return finish("vignette", "type", "dark", [card], brief);
+    return { ...finish("vignette", "type", "dark", [card], brief), seedBg: "ink" };
   }
   if (v === "search") {
+    const rows = [];
+    let count = copy.split(" ").length;
+    for (const extra of [brief.name, brief.hostname]) {
+      const bits = String(extra || "").split(" ").filter(Boolean);
+      if (!bits.length || count + bits.length > 6) continue;
+      rows.push(bits.join(" "));
+      count += bits.length;
+      if (rows.length === 2) break;
+    }
+    const list = rows.map((rowText, i) => `<div class="srow" data-role="ui" data-at="${(1.05 + i * 0.35).toFixed(2)}">${esc(rowText)}</div>`).join("");
     const card = placeCenter({
       id: "search",
       role: "shape",
       className: "card search",
-      w: 980,
-      h: 230,
+      w: 920,
+      h: 340,
       area: true,
       at: 0.08,
-      html: `<div class="query" data-role="ui"><span data-line="${esc(copy)}">${esc(copy)}</span></div>`,
+      seed: true,
+      html: `<div class="query" data-role="ui"><span data-line="${esc(copy)}">${esc(copy)}</span></div><div class="rows">${list}</div>`,
     });
-    return finish("vignette", "search", "light", [card], brief);
+    return { ...finish("vignette", "search", "light", [card], brief), seedBg: "paper" };
   }
   if (v === "toggle") {
     const card = placeCenter({
@@ -124,54 +161,61 @@ function vignette(scene, brief) {
       role: "shape",
       className: "card toggle",
       w: 920,
-      h: 240,
+      h: 280,
       area: true,
       at: 0.08,
-      html: `<div class="tog"><span data-role="ui">${wordsHtml(copy.split(" "), "", 0.16)}</span><i class="track"><i class="knob"></i></i></div>`,
+      seed: true,
+      html: `<div class="tog"><span data-role="ui">${esc(copy)}</span><i class="track"><i class="knob"></i></i></div><div class="preview" data-role="ui">Off</div>`,
     });
-    return finish("vignette", "toggle", "light", [card], brief);
+    return { ...finish("vignette", "toggle", "light", [card], brief), seedBg: "paper" };
   }
   if (v === "chat") {
     const card = placeCenter({
       id: "chat",
       role: "shape",
       className: "card chat",
-      w: 780,
+      w: 820,
       h: 280,
       area: true,
       at: 0.08,
-      html: `<div class="bubble" data-role="ui">${wordsHtml(copy.split(" "), "", 0.14)}</div>`,
+      seed: true,
+      html: `<div class="bubble" data-role="ui">${esc(copy)}</div>`,
     });
-    return finish("vignette", "chat", "light", [card], brief);
+    return { ...finish("vignette", "chat", "light", [card], brief), seedBg: "paper" };
   }
   if (v === "chart") {
+    const num = copy.match(/\d+(?:\.\d+)?/);
+    const suffix = /%/.test(copy) ? "%" : "";
+    const label = copy.replace(/\d+(?:\.\d+)?%?/, "").replace(/\s+/g, " ").trim();
+    const figure = num
+      ? `<div class="metric" data-role="ui" data-count="${num[0]}" data-suffix="${suffix}">0${suffix}</div>`
+      : `<div class="metric" data-role="ui">${esc(copy)}</div>`;
+    const note = num && label ? `<div class="note" data-role="sub">${esc(label)}</div>` : "";
     const card = placeCenter({
       id: "chart",
       role: "shape",
-      className: "card bars",
+      className: "card metricCard",
       w: 760,
-      h: 380,
+      h: 400,
       area: true,
       at: 0.08,
-      html: `<div class="meter tall"><i data-h="32"></i><i data-h="54"></i><i data-h="100" data-hot="1"></i></div>`,
+      seed: true,
+      html: `${figure}${note}<div class="meter tall"><i data-h="32"></i><i data-h="54"></i><i data-h="100" data-hot="1"></i></div>`,
     });
-    return finish("vignette", "chart", "light", [card], brief);
+    return { ...finish("vignette", "chart", "light", [card], brief), seedBg: "paper" };
   }
-  const words = copy.split(" ").filter(Boolean).slice(0, 3);
-  const wide = words.length === 1 ? 860 : words.length === 2 ? 440 : 320;
-  const tall = words.length < 3 ? 280 : 230;
-  const cards = words.map((word, i) => ({
-    id: `deck${i}`,
+  const card = placeCenter({
+    id: "phrase",
     role: "shape",
-    className: "card deck",
-    w: wide,
-    h: tall,
+    className: "card chat",
+    w: 860,
+    h: 260,
     area: true,
-    stack: "deck",
-    at: (0.06 + i * 0.14).toFixed(2),
-    html: `<span class="deckWord" data-word data-delay="${(0.14 + i * 0.15).toFixed(2)}" data-role="ui">${esc(word)}</span>`,
-  }));
-  return finish("vignette", "cards", "light", row(cards, 64, Math.round((FRAME_H - tall) / 2)), brief);
+    at: 0.08,
+    seed: true,
+    html: `<div class="bubble" data-role="ui">${esc(copy)}</div>`,
+  });
+  return { ...finish("vignette", "cards", "light", [card], brief), seedBg: "paper" };
 }
 
 function ctaShot(brief) {
@@ -215,10 +259,20 @@ export function buildShots(brief, plan) {
   const length = plan.length || brief.length;
   const base = Math.round((length / n) * 100) / 100;
   let t = 0;
-  return shots.map((shot, i) => {
+  let morphed = false;
+  const timed = shots.map((shot, i) => {
     const dur = i === n - 1 ? Math.round((length - t) * 100) / 100 : base;
     const start = Math.round(t * 100) / 100;
     t = Math.round((start + dur) * 100) / 100;
-    return { ...shot, start, dur, end: t, tx: TX[i % TX.length] };
+    let tx = TX[i % TX.length];
+    if (!morphed && shot.play && shot.play !== "bars" && shot.play !== "chart") {
+      tx = "morph";
+      morphed = true;
+    }
+    return { ...shot, start, dur, end: t, tx };
   });
+  for (let i = 0; i < timed.length - 1; i++) {
+    if (timed[i].tx === "scale") timed[i + 1].bg = timed[i].seedBg || "paper";
+  }
+  return timed;
 }

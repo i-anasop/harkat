@@ -44,7 +44,8 @@ export function wordsHtml(words, highlight, start = 0.08) {
     .map((word, i) => {
       const pill = highlight && word.toLowerCase() === highlight.toLowerCase() ? " pill" : "";
       const delay = (start + i * 0.15).toFixed(2);
-      return `<span class="word${pill}" data-word data-delay="${delay}">${esc(word)}</span>`;
+      const seed = pill ? " data-seed" : "";
+      return `<span class="word${pill}" data-word data-delay="${delay}"${seed}>${esc(word)}</span>`;
     })
     .join(" ");
 }

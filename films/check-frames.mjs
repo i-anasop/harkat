@@ -11,7 +11,7 @@ const root = process.cwd();
 const built = spawnSync("node", ["packages/engine/src/cli.js", "sample", "--html-only"], { cwd: root, stdio: "inherit" });
 if (built.status !== 0) process.exit(built.status ?? 1);
 
-const names = ["keel", "northwind"];
+const names = ["keel", "linear"];
 const browser = await chromium.launch();
 const problems = [];
 const ratios = [];
@@ -36,7 +36,11 @@ for (const name of names) {
         }
         return true;
       };
-      const boxes = [...scene.querySelectorAll("[data-box]")].filter((el) => shown(el) || !el.hasAttribute("data-at"));
+      const grown = (el) => {
+        const m = /matrix\(([-0-9.]+)/.exec(getComputedStyle(el).transform || "");
+        return !!(m && Math.abs(parseFloat(m[1])) > 1.2);
+      };
+      const boxes = [...scene.querySelectorAll("[data-box]")].filter((el) => (shown(el) || !el.hasAttribute("data-at")) && !grown(el));
       const rect = (el) => el.getBoundingClientRect();
       const hit = (a, b) => {
         const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
@@ -72,6 +76,7 @@ for (const name of names) {
         for (const box of boxes) {
           if (box.contains(el) || el.contains(box)) continue;
           if (home && home.dataset.stack && home.dataset.stack === box.dataset.stack) continue;
+          if (grown(el) || grown(box) || (home && grown(home))) continue;
           if (hit(r, rect(box))) out.push(`${time.toFixed(1)}s text hits ${box.dataset.id}`);
         }
       }

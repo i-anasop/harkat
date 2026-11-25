@@ -29,10 +29,13 @@ test("two briefs make different films at their own lengths", () => {
   assert.equal(keel.goal, "launch");
   assert.equal(wind.goal, "feature");
   assert.match(keel.html, /data-play="type"/);
-  assert.match(keel.html, /<section class="scene dark"/);
+  assert.match(keel.html, /<section class="scene dark/);
   assert.match(keel.html, /98%/);
-  assert.match(wind.html, /data-play="chat"/);
+  assert.match(wind.html, /data-play="search"/);
   assert.match(wind.html, /data-play="toggle"/);
+  assert.match(wind.html, /class="srow"/);
+  assert.match(keel.html, /data-count="98"/);
+  assert.doesNotMatch(keel.html + wind.html, /class="card deck"/);
   assert.doesNotMatch(wind.html, /<section class="scene dark"/);
   assert.notEqual(keel.html, wind.html);
   assert.match(keel.html, /cubic-bezier|0\.16/);

@@ -48,6 +48,23 @@ test("sample shots stay sparse and do not overlap", () => {
   }
 });
 
+test("a phrase stays in one card instead of a lone stop-word", () => {
+  const read = readBrief({
+    ...SAMPLES[0],
+    features: ["Shows the diff", "Types the change", "Finds the bug"],
+  });
+  assert.equal(read.ok, true);
+  const shots = buildShots(read.brief, rulePlan(read.brief));
+  for (const shot of shots) {
+    for (const el of shot.elements) {
+      const text = String(el.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const bits = text ? text.split(" ").filter(Boolean) : [];
+      if (bits.length === 1) assert.ok(!["the", "a", "an"].includes(bits[0].toLowerCase()), `${shot.kind} ${bits[0]}`);
+    }
+  }
+  assert.doesNotMatch(shots.map((shot) => shot.elements.map((el) => el.html).join("")).join(""), /class="card deck"/);
+});
+
 test("content ratio is the area of the placed boxes", () => {
   const ratio = contentRatio([{ area: true, w: 192, h: 108 }, { area: false, w: 500, h: 500 }]);
   assert.ok(Math.abs(ratio - 0.01) < 0.0001);

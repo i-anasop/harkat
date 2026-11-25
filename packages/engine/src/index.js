@@ -2,7 +2,7 @@ export { screenText } from "./halal.js";
 export { readBrief } from "./brief.js";
 export { rulePlan, validatePlan } from "./plan.js";
 export { assertClear, contentRatio } from "./layout.js";
-export { extractSite, vetUrl, isBlockedIp, fetchPublicPage, fetchImageData, sanitizeSvg } from "./site.js";
+export { extractSite, vetUrl, isBlockedIp, fetchPublicPage, fetchImageData, sanitizeSvg, accentFromPng, accentFromHtml } from "./site.js";
 export { estimatePlannerCost, planWithModel } from "./llm.js";
 export { SAMPLE_BRIEF, SAMPLES } from "./sample.js";
 export { beats } from "./motion.js";

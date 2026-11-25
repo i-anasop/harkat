@@ -2,7 +2,7 @@
 
 Hand-made films live here, one folder each, with a deterministic `film.html` (`render(t)` per frame).
 
-Generated films come from `packages/engine` (a brief in, one of these films out). The samples are `samples/keel` and `samples/northwind`. See the root README.
+Generated films come from `packages/engine` (a brief in, one of these films out). The samples are `samples/keel` and `samples/linear`. See the root README.
 
 ```
 films/

@@ -33,7 +33,7 @@ Two fake products. The scene list follows the brief: goal, length, and the words
 | Film | Brief | What you should see |
 |------|--------|---------------------|
 | Keel | 30s launch for a dev tool | A limit beat, a dark code window, a search line, a proof stat |
-| Northwind | 15s feature for a B2B tool | A chat bubble and a toggle, no dark act |
+| Linear | 15s feature | A real linear.app logo and colour, a search with rows, and a toggle |
 
 ```bash
 cd films
@@ -46,7 +46,7 @@ npm run sample
 
 That writes `films/samples/<name>/film.html` and `films/samples/<name>/out/<name>-sample.mp4`.
 
-`npm run sample -- --html-only` skips the video. `npm run sample -- keel` renders one of them.
+`npm run sample -- --html-only` skips the video. `npm run sample -- keel` renders one of them. `linear` fetches https://linear.app while it renders.
 
 Studio takes a name, one-liner, URL, audience, goal, tone, length, features, and an optional proof stat. A model is optional and off unless `HARKAT_LLM_API_KEY`, `OPENAI_API_KEY`, or `GROQ_API_KEY` is set. It may only return a scene plan. It never writes the animation. With no key, the same rules run every time.
 

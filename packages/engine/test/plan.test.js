@@ -60,7 +60,7 @@ test("launch and feature plans choose different beats", () => {
   const launchV = launch.scenes.map((scene) => scene.vignette).filter(Boolean);
   const featureV = feature.scenes.map((scene) => scene.vignette).filter(Boolean);
   assert.ok(launchV.includes("code"));
-  assert.ok(featureV.includes("chat"));
+  assert.ok(featureV.includes("search"));
   assert.ok(featureV.includes("toggle"));
   assert.notDeepEqual(launchV, featureV);
 });

@@ -8,7 +8,9 @@ body[data-mode="dark"]{background:#111}
 body[data-mode="dark"] .grid{background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px)}
 .grain{position:fixed;inset:0;width:1920px;height:1080px;pointer-events:none;opacity:.01}
 .scene{position:absolute;inset:0;background:#F5F5F5;visibility:hidden;opacity:0}
-.scene.dark{background:#111;color:#F5F5F5}
+.scene.dark,.scene.inkbg{background:#111;color:#F5F5F5}
+.scene.bleed{background:var(--accent);color:#fff}
+.scene.bleed .headline,.scene.bleed .sub{color:#fff}
 .zoom{position:absolute;inset:0;transform-origin:50% 50%}
 .el{position:absolute}
 .headline{font-weight:800;font-size:118px;letter-spacing:-.05em;line-height:1;color:#111;white-space:nowrap;text-align:center}
@@ -27,6 +29,16 @@ body[data-mode="dark"] .grid{background-image:linear-gradient(rgba(255,255,255,.
 .code span{display:block;padding-right:8px}
 .codeCard{display:flex;align-items:center}
 .search,.toggle,.chat,.cta{display:flex;align-items:center;justify-content:center}
+.search{flex-direction:column;align-items:stretch;padding:36px 48px;gap:16px}
+.rows{display:flex;flex-direction:column;gap:12px}
+.srow{font:600 36px/1.1 G,sans-serif;letter-spacing:-.03em;padding-top:8px;border-top:2px solid #E4E4E4}
+.result{display:block;margin-top:8px;color:var(--accent);font:600 40px/1.1 G,sans-serif}
+.preview{font:600 36px/1 G,sans-serif;border-radius:12px;padding:10px 22px;background:#EFEFEF}
+.preview.on{background:var(--accent);color:#fff}
+.metric{font:800 96px/0.9 G,sans-serif;letter-spacing:-.05em}
+.metricCard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:36px 48px}
+.note{font-size:28px;font-weight:400}
+.toggle{flex-direction:column;gap:20px;padding:32px 48px}
 .query{font:600 44px/1 G,sans-serif;letter-spacing:-.03em;display:flex;align-items:center;gap:8px}
 .caret{display:inline-block;width:3px;height:.85em;background:currentColor;margin-left:4px;vertical-align:-2px}
 .tog{width:100%;padding:0 56px;display:flex;align-items:center;justify-content:space-between;gap:32px}
@@ -42,12 +54,12 @@ body[data-mode="dark"] .grid{background-image:linear-gradient(rgba(255,255,255,.
 .btn{background:var(--accent);color:#fff;border-radius:12px;min-width:220px;height:76px;padding:0 36px;display:flex;align-items:center;justify-content:center;font:600 36px/1 G,sans-serif}
 img.logo{width:96px;height:96px;object-fit:contain;display:block}
 .logobox{display:flex;align-items:center;justify-content:center}
-.fill{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:999px;background:var(--accent);opacity:0;pointer-events:none}
 [data-at]{opacity:0}
+[data-seed]{transform-origin:50% 50%}
 </style></head><body data-mode="light">
 <div class="grid" data-fx></div>
 <svg class="grain" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
-<section class="scene" data-start="0" data-end="2.5" data-mode="light" data-tx="scale" data-play="" data-zoom="0.04"><div class="zoom"><div class="el headline" data-box data-id="problem-line" data-area data-role="headline" style="left:464px;top:468px;width:993px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Reviews</span> <span class="word pill" data-word data-delay="0.23">stall</span></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="2.5" data-end="5" data-mode="light" data-tx="morph" data-play="bars" data-zoom="0.04"><div class="zoom"><div class="el headline" data-box data-id="limit-line" data-area data-role="headline" style="left:464px;top:303px;width:993px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Limit</span> <span class="word" data-word data-delay="0.23">reached</span></div><div class="el card bars" data-box data-id="limit-card" data-area data-role="shape" data-at="0.12" style="left:550px;top:527px;width:820px;height:250px"><div class="meter"><i data-h="36"></i><i data-h="58"></i><i data-h="100" data-hot="1"></i></div></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="5" data-end="7.5" data-mode="light" data-tx="whip" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="kicker" data-area data-role="sub" style="left:871px;top:415px;width:179px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Introducing</span></div><div class="el headline" data-box data-id="name" data-area data-role="headline" style="left:797px;top:522px;width:327px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Keel</span></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="7.5" data-end="10" data-mode="light" data-tx="cut" data-play="" data-zoom="0.04"><div class="zoom"><div class="el headline" data-box data-id="benefit-line" data-area data-role="headline" style="left:357px;top:468px;width:1207px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Types</span> <span class="word" data-word data-delay="0.23">the</span> <span class="word pill" data-word data-delay="0.38">change</span></div><i class="fill" data-fx></i></div></section><section class="scene dark" data-start="10" data-end="12.5" data-mode="dark" data-tx="scale" data-play="type" data-zoom="0.04"><div class="zoom"><div class="el card codeCard" data-box data-id="code" data-area data-role="shape" data-at="0.08" style="left:530px;top:390px;width:860px;height:300px"><pre class="code" data-role="ui"><span data-line="Types the">Types the</span><span data-line="change">change</span></pre></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="12.5" data-end="15" data-mode="light" data-tx="morph" data-play="" data-zoom="0.04"><div class="zoom"><div class="el headline" data-box data-id="benefit-line" data-area data-role="headline" style="left:470px;top:468px;width:980px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Finds</span> <span class="word" data-word data-delay="0.23">the</span> <span class="word pill" data-word data-delay="0.38">bug</span></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="15" data-end="17.5" data-mode="light" data-tx="whip" data-play="search" data-zoom="0.04"><div class="zoom"><div class="el card search" data-box data-id="search" data-area data-role="shape" data-at="0.08" style="left:470px;top:425px;width:980px;height:230px"><div class="query" data-role="ui"><span data-line="Finds the bug">Finds the bug</span></div></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="17.5" data-end="20" data-mode="light" data-tx="cut" data-play="" data-zoom="0.04"><div class="zoom"><div class="el headline" data-box data-id="benefit-line" data-area data-role="headline" style="left:432px;top:468px;width:1056px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Shows</span> <span class="word" data-word data-delay="0.23">the</span> <span class="word pill" data-word data-delay="0.38">diff</span></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="20" data-end="22.5" data-mode="light" data-tx="scale" data-play="cards" data-zoom="0.04"><div class="zoom"><div class="el card deck" data-box data-id="deck0" data-area data-role="shape" data-stack="deck" data-at="0.06" style="left:416px;top:425px;width:320px;height:230px"><span class="deckWord" data-word data-delay="0.14" data-role="ui">Shows</span></div><div class="el card deck" data-box data-id="deck1" data-area data-role="shape" data-stack="deck" data-at="0.20" style="left:800px;top:425px;width:320px;height:230px"><span class="deckWord" data-word data-delay="0.29" data-role="ui">the</span></div><div class="el card deck" data-box data-id="deck2" data-area data-role="shape" data-stack="deck" data-at="0.34" style="left:1184px;top:425px;width:320px;height:230px"><span class="deckWord" data-word data-delay="0.44" data-role="ui">diff</span></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="22.5" data-end="25" data-mode="light" data-tx="morph" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="proof-sub" data-area data-role="sub" style="left:918px;top:415px;width:85px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Up</span> <span class="word" data-word data-delay="0.23">to</span></div><div class="el headline" data-box data-id="proof-head" data-area data-role="headline" style="left:835px;top:522px;width:251px;height:144px;font-size:118px"><span class="word pill" data-word data-delay="0.08">98%</span></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="25" data-end="27.5" data-mode="light" data-tx="whip" data-play="chart" data-zoom="0.04"><div class="zoom"><div class="el card bars" data-box data-id="chart" data-area data-role="shape" data-at="0.08" style="left:580px;top:350px;width:760px;height:380px"><div class="meter tall"><i data-h="32"></i><i data-h="54"></i><i data-h="100" data-hot="1"></i></div></div><i class="fill" data-fx></i></div></section><section class="scene" data-start="27.5" data-end="30" data-mode="light" data-tx="cut" data-play="" data-zoom="0.04"><div class="zoom"><div class="el card cta" data-box data-id="cta" data-area data-role="shape" data-at="0.06" style="left:640px;top:290px;width:640px;height:500px"><div class="ctaIn"><div class="host" data-role="sub" data-at="0.14">keel.example</div><div class="btn" data-role="ui" data-at="0.3">Open</div><div class="mark" data-role="sub" data-at="0.46">Sample</div></div></div><i class="fill" data-fx></i></div></section>
+<section class="scene" data-start="0" data-end="2.5" data-mode="light" data-tx="scale" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="problem-cap" data-area data-role="sub" style="left:926px;top:419px;width:69px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Keel</span></div><div class="el headline" data-box data-id="problem-line" data-area data-role="headline" style="left:464px;top:518px;width:993px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Reviews</span> <span class="word pill" data-word data-delay="0.23" data-seed>stall</span></div></div></section><section class="scene bleed" data-start="2.5" data-end="5" data-mode="light" data-tx="whip" data-play="bars" data-zoom="0.04"><div class="zoom"><div class="el headline" data-box data-id="limit-line" data-area data-role="headline" style="left:464px;top:303px;width:993px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Limit</span> <span class="word" data-word data-delay="0.23">reached</span></div><div class="el card bars" data-box data-id="limit-card" data-area data-role="shape" data-at="0.12" data-seed style="left:550px;top:527px;width:820px;height:250px"><div class="meter"><i data-h="36"></i><i data-h="58"></i><i data-h="100" data-hot="1"></i></div></div></div></section><section class="scene" data-start="5" data-end="7.5" data-mode="light" data-tx="cut" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="kicker" data-area data-role="sub" style="left:871px;top:415px;width:179px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Introducing</span></div><div class="el headline" data-box data-id="name" data-area data-role="headline" style="left:797px;top:522px;width:327px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Keel</span></div></div></section><section class="scene" data-start="7.5" data-end="10" data-mode="light" data-tx="scale" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="benefit-cap" data-area data-role="sub" style="left:926px;top:419px;width:69px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Keel</span></div><div class="el headline" data-box data-id="benefit-line" data-area data-role="headline" style="left:357px;top:518px;width:1207px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Types</span> <span class="word" data-word data-delay="0.23">the</span> <span class="word pill" data-word data-delay="0.38" data-seed>change</span></div></div></section><section class="scene dark bleed" data-start="10" data-end="12.5" data-mode="dark" data-tx="morph" data-play="type" data-zoom="0.04"><div class="zoom"><div class="el card codeCard" data-box data-id="code" data-area data-role="shape" data-at="0.08" data-seed style="left:520px;top:380px;width:880px;height:320px"><pre class="code" data-role="ui"><span data-line="Types the">Types the</span><span class="result" data-role="ui" data-at="1.25">change</span></pre></div></div></section><section class="scene" data-start="12.5" data-end="15" data-mode="light" data-tx="whip" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="benefit-cap" data-area data-role="sub" style="left:926px;top:419px;width:69px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Keel</span></div><div class="el headline" data-box data-id="benefit-line" data-area data-role="headline" style="left:470px;top:518px;width:980px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Finds</span> <span class="word" data-word data-delay="0.23">the</span> <span class="word pill" data-word data-delay="0.38" data-seed>bug</span></div></div></section><section class="scene" data-start="15" data-end="17.5" data-mode="light" data-tx="cut" data-play="search" data-zoom="0.04"><div class="zoom"><div class="el card search" data-box data-id="search" data-area data-role="shape" data-at="0.08" data-seed style="left:500px;top:370px;width:920px;height:340px"><div class="query" data-role="ui"><span data-line="Finds the bug">Finds the bug</span></div><div class="rows"><div class="srow" data-role="ui" data-at="1.05">Keel</div><div class="srow" data-role="ui" data-at="1.40">keel.example</div></div></div></div></section><section class="scene" data-start="17.5" data-end="20" data-mode="light" data-tx="scale" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="benefit-cap" data-area data-role="sub" style="left:926px;top:419px;width:69px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Keel</span></div><div class="el headline" data-box data-id="benefit-line" data-area data-role="headline" style="left:432px;top:518px;width:1056px;height:144px;font-size:118px"><span class="word" data-word data-delay="0.08">Shows</span> <span class="word" data-word data-delay="0.23">the</span> <span class="word pill" data-word data-delay="0.38" data-seed>diff</span></div></div></section><section class="scene bleed" data-start="20" data-end="22.5" data-mode="light" data-tx="scale" data-play="cards" data-zoom="0.04"><div class="zoom"><div class="el card chat" data-box data-id="phrase" data-area data-role="shape" data-at="0.08" data-seed style="left:530px;top:410px;width:860px;height:260px"><div class="bubble" data-role="ui">Shows the diff</div></div></div></section><section class="scene" data-start="22.5" data-end="25" data-mode="light" data-tx="whip" data-play="" data-zoom="0.04"><div class="zoom"><div class="el sub" data-box data-id="proof-sub" data-area data-role="sub" style="left:918px;top:415px;width:85px;height:35px;font-size:28px"><span class="word" data-word data-delay="0.08">Up</span> <span class="word" data-word data-delay="0.23">to</span></div><div class="el headline" data-box data-id="proof-head" data-area data-role="headline" style="left:835px;top:522px;width:251px;height:144px;font-size:118px"><span class="word pill" data-word data-delay="0.08" data-seed>98%</span></div></div></section><section class="scene" data-start="25" data-end="27.5" data-mode="light" data-tx="cut" data-play="chart" data-zoom="0.04"><div class="zoom"><div class="el card metricCard" data-box data-id="chart" data-area data-role="shape" data-at="0.08" data-seed style="left:580px;top:340px;width:760px;height:400px"><div class="metric" data-role="ui" data-count="98" data-suffix="%">0%</div><div class="note" data-role="sub">Up to</div><div class="meter tall"><i data-h="32"></i><i data-h="54"></i><i data-h="100" data-hot="1"></i></div></div></div></section><section class="scene" data-start="27.5" data-end="30" data-mode="light" data-tx="scale" data-play="" data-zoom="0.04"><div class="zoom"><div class="el card cta" data-box data-id="cta" data-area data-role="shape" data-at="0.06" style="left:640px;top:290px;width:640px;height:500px"><div class="ctaIn"><div class="host" data-role="sub" data-at="0.14">keel.example</div><div class="btn" data-role="ui" data-at="0.3">Open</div><div class="mark" data-role="sub" data-at="0.46">Sample</div></div></div></div></section>
 <script id="state" type="application/json">{"end":30,"logo":""}</script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -94,33 +106,38 @@ function play(scene, local, dur) {
     const p = ease(clamp((local - 1.05) / 0.4));
     const track = scene.querySelector(".track");
     const knob = scene.querySelector(".knob");
+    const preview = scene.querySelector(".preview");
     if (track) track.classList.toggle("on", p > 0.5);
     if (knob) knob.style.transform = "translateX(" + (p * 52).toFixed(1) + "px)";
-  }
-  if (kind === "cards") {
-    const p = ease(clamp((local - dur * 0.5) / 0.55));
-    scene.querySelectorAll(".deck").forEach((card) => {
-      const dx = (960 - (card.offsetLeft + card.offsetWidth / 2)) * p;
-      const dy = (540 - (card.offsetTop + card.offsetHeight / 2)) * p;
-      card.style.transform = "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px) scale(" + (1 - p * 0.88).toFixed(3) + ")";
-      card.style.borderRadius = (12 + p * 120).toFixed(1) + "px";
-      card.style.opacity = "1";
-    });
-  }
-  if (scene.dataset.tx === "scale") {
-    const u = ease(clamp((local - (dur - 0.22)) / 0.22));
-    const fill = scene.querySelector(".fill");
-    if (fill) {
-      fill.style.opacity = u > 0.02 ? "1" : "0";
-      fill.style.transform = "scale(" + (1 + u * 28).toFixed(3) + ")";
+    if (preview) {
+      preview.textContent = p > 0.5 ? "On" : "Off";
+      preview.classList.toggle("on", p > 0.5);
     }
   }
-  if (scene.dataset.tx === "morph") {
-    const u = ease(clamp((local - (dur - 0.22)) / 0.22));
-    const card = scene.querySelector(".card");
-    if (card && u > 0 && kind !== "cards") {
-      card.style.borderRadius = (12 + u * 200).toFixed(1) + "px";
-      card.style.transform = "scale(" + (1 - u * 0.9).toFixed(3) + ")";
+  if (kind === "chart") {
+    scene.querySelectorAll("[data-count]").forEach((el) => {
+      const p = ease(clamp((local - 0.25) / 1.1));
+      el.textContent = Math.round((+el.dataset.count) * p) + (el.dataset.suffix || "");
+    });
+  }
+  const seed = scene.querySelector("[data-seed]");
+  if (seed && scene.dataset.tx === "scale") {
+    const u = ease(clamp((local - (dur - 0.36)) / 0.36));
+    if (u > 0) {
+      const cover = Math.max(1920 / Math.max(seed.offsetWidth, 40), 1080 / Math.max(seed.offsetHeight, 40)) * 1.15;
+      seed.style.transformOrigin = "50% 50%";
+      seed.style.zIndex = "6";
+      seed.style.transform = "scale(" + (1 + (cover - 1) * u).toFixed(3) + ")";
+    }
+  }
+  if (seed && scene.dataset.tx === "morph") {
+    const u = ease(clamp((local - (dur - 0.42)) / 0.42));
+    if (u > 0) {
+      const dx = 960 - (seed.offsetLeft + seed.offsetWidth / 2);
+      const dy = 540 - (seed.offsetTop + seed.offsetHeight / 2);
+      seed.style.zIndex = "6";
+      seed.style.borderRadius = (12 + u * 220).toFixed(1) + "px";
+      seed.style.transform = "translate(" + (dx * u).toFixed(1) + "px," + (dy * u).toFixed(1) + "px) scale(" + (1 - u * 0.84).toFixed(3) + ")";
     }
   }
 }

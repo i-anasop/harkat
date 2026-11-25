@@ -1,5 +1,6 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
+import { inflateSync } from "node:zlib";
 
 const BLOCKED_HOSTS = new Set(["localhost", "metadata.google.internal", "metadata.internal"]);
 
@@ -136,7 +137,6 @@ export function extractSite(html, pageUrl) {
   const svgFill = svgTag.match(/fill\s*[:=]\s*["']?(#[0-9a-fA-F]{3,6})/i)?.[1] ?? "";
   const color = normalizeHex(meta("theme-color")) || normalizeHex(cssVar) || normalizeHex(svgFill);
   const logoHref = absUrl(link((rel) => rel.split(/\s+/).includes("apple-touch-icon")), pageUrl)
-    || absUrl(meta("og:image"), pageUrl)
     || absUrl(link((rel) => rel.split(/\s+/).includes("icon")), pageUrl);
   return {
     name,
@@ -181,6 +181,116 @@ export async function fetchPublicPage(raw, opts = {}) {
     return { url: url.href, html: buf.toString("utf8") };
   }
   throw new Error("Too many redirects.");
+}
+
+/** Most repeated saturated hex in the early page. Late illustration colours are left out. */
+export function accentFromHtml(html) {
+  const text = String(html).replace(/%23/gi, "#");
+  const limit = Math.floor(text.length * 0.72);
+  const counts = new Map();
+  for (const match of text.matchAll(/#([0-9a-fA-F]{6})/g)) {
+    if (match.index > limit) continue;
+    const hex = normalizeHex(`#${match[1]}`);
+    if (!hex) continue;
+    counts.set(hex, (counts.get(hex) || 0) + 1);
+  }
+  let best = null;
+  let seen = 2;
+  for (const [hex, count] of counts) {
+    if (count > seen) {
+      best = hex;
+      seen = count;
+    }
+  }
+  return best;
+}
+
+/** Saturated colour from a real logo PNG. Near-black and near-white pixels are ignored. */
+export function accentFromPng(dataUrl) {
+  try {
+    const body = String(dataUrl).split(",")[1];
+    if (!body) return null;
+    const buf = Buffer.from(body, "base64");
+    if (buf.toString("ascii", 1, 4) !== "PNG") return null;
+    let width = 0;
+    let height = 0;
+    let color = 6;
+    let depth = 8;
+    let interlace = 0;
+    const idats = [];
+    let off = 8;
+    while (off + 12 <= buf.length) {
+      const len = buf.readUInt32BE(off);
+      const type = buf.toString("ascii", off + 4, off + 8);
+      const data = buf.subarray(off + 8, off + 8 + len);
+      if (type === "IHDR") {
+        width = data.readUInt32BE(0);
+        height = data.readUInt32BE(4);
+        depth = data[8];
+        color = data[9];
+        interlace = data[12];
+      } else if (type === "IDAT") idats.push(data);
+      else if (type === "IEND") break;
+      off += 12 + len;
+    }
+    if (!width || !height || depth !== 8 || interlace || (color !== 2 && color !== 6)) return null;
+    const bpp = color === 6 ? 4 : 3;
+    const raw = inflateSync(Buffer.concat(idats));
+    const stride = width * bpp;
+    const rows = [];
+    let p = 0;
+    const paeth = (a, b, c) => {
+      const q = a + b - c;
+      const pa = Math.abs(q - a);
+      const pb = Math.abs(q - b);
+      const pc = Math.abs(q - c);
+      if (pa <= pb && pa <= pc) return a;
+      return pb <= pc ? b : c;
+    };
+    for (let y = 0; y < height; y++) {
+      const filter = raw[p++];
+      const row = Buffer.alloc(stride);
+      for (let i = 0; i < stride; i++) {
+        const x = raw[p++];
+        const left = i >= bpp ? row[i - bpp] : 0;
+        const up = y ? rows[y - 1][i] : 0;
+        const ul = y && i >= bpp ? rows[y - 1][i - bpp] : 0;
+        if (filter === 1) row[i] = (x + left) & 255;
+        else if (filter === 2) row[i] = (x + up) & 255;
+        else if (filter === 3) row[i] = (x + ((left + up) >> 1)) & 255;
+        else if (filter === 4) row[i] = (x + paeth(left, up, ul)) & 255;
+        else row[i] = x;
+      }
+      rows.push(row);
+    }
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let n = 0;
+    const step = Math.max(1, Math.floor(Math.min(width, height) / 24));
+    for (let y = 0; y < height; y += step) {
+      for (let x = 0; x < width; x += step) {
+        const i = x * bpp;
+        const R = rows[y][i];
+        const G = rows[y][i + 1];
+        const B = rows[y][i + 2];
+        const A = bpp === 4 ? rows[y][i + 3] : 255;
+        if (A < 160) continue;
+        const max = Math.max(R, G, B);
+        const min = Math.min(R, G, B);
+        if (max - min < 28 || max < 40 || max > 245) continue;
+        r += R;
+        g += G;
+        b += B;
+        n += 1;
+      }
+    }
+    if (!n) return null;
+    const hex = [r, g, b].map((v) => Math.round(v / n).toString(16).padStart(2, "0")).join("");
+    return normalizeHex(`#${hex}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchImageData(raw, opts = {}) {
