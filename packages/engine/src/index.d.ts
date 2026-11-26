@@ -39,6 +39,8 @@ export type ComposeOk = {
   accent: string;
   planSource?: "rules" | "model";
   planCost?: number;
+  /** model id, "cache", "no-key", "quota", or "off". Empty when the rule planner ran on its own. */
+  planNote?: string;
 };
 
 export type ComposeNo = { ok: false; reason: string };
@@ -49,10 +51,15 @@ export type SiteExtract = {
   color: string | null;
   logoHref: string | null;
   logoSvg: string | null;
+  excerpt?: string;
+  font?: string;
 };
 
 export function compose(input: BriefInput, opts?: { fontUrl?: string }): ComposeOk | ComposeNo;
-export function composeWithModel(input: BriefInput, opts?: { fontUrl?: string; siteText?: string; timeout?: number }): Promise<ComposeOk | ComposeNo>;
+export function composeWithModel(
+  input: BriefInput,
+  opts?: { fontUrl?: string; siteText?: string; timeout?: number; seed?: string | number; ip?: string; brandFont?: string },
+): Promise<ComposeOk | ComposeNo>;
 export function screenText(text: string): { ok: true } | { ok: false; reason: string };
 export function extractSite(html: string, pageUrl: string): SiteExtract;
 export function fetchPublicPage(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<{ url: string; html: string }>;

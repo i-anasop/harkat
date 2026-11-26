@@ -66,7 +66,7 @@ export async function planWithModel(brief, opts = {}) {
     logCost("rules", 0, 0, 0);
     return { plan: rulePlan(brief), source: "rules", cost: 0, tokens: { in: 0, out: 0 }, estimate };
   }
-  const model = process.env.HARKAT_LLM_MODEL || (auth.base.includes("groq.com") ? "llama-3.3-70b-versatile" : "gpt-4o-mini");
+  const model = process.env.HARKAT_LLM_MODEL || (auth.base.includes("groq.com") ? "openai/gpt-oss-120b" : "gpt-4o-mini");
   const fetchImpl = opts.fetchImpl || fetch;
   try {
     const res = await fetchImpl(`${auth.base}/chat/completions`, {

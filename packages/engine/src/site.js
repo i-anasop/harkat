@@ -138,12 +138,24 @@ export function extractSite(html, pageUrl) {
   const color = normalizeHex(meta("theme-color")) || normalizeHex(cssVar) || normalizeHex(svgFill);
   const logoHref = absUrl(link((rel) => rel.split(/\s+/).includes("apple-touch-icon")), pageUrl)
     || absUrl(link((rel) => rel.split(/\s+/).includes("icon")), pageUrl);
+  const body = withoutScripts.replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<svg[\s\S]*?<\/svg>/gi, " ");
+  const excerpt = plainText(body.replace(/<[^>]+>/g, " "), 600);
+  const google = source.match(/fonts\.googleapis\.com\/css2?\?family=([^&"' >]+)/i);
+  let font = "";
+  if (google) {
+    try {
+      const family = decodeURIComponent(google[1]).split(":")[0].replace(/\+/g, " ").trim();
+      if (/^[A-Za-z][\w -]{1,40}$/.test(family)) font = family;
+    } catch { /* a bad font query is ignored */ }
+  }
   return {
     name,
     tagline,
     color,
     logoHref,
     logoSvg: sanitizeSvg(svgTag),
+    excerpt,
+    font,
   };
 }
 

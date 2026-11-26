@@ -48,7 +48,7 @@ That writes `films/samples/<name>/film.html` and `films/samples/<name>/out/<name
 
 `npm run sample -- --html-only` skips the video. `npm run sample -- keel` renders one of them. `linear` fetches https://linear.app while it renders.
 
-Studio takes a name, one-liner, URL, audience, goal, tone, length, features, and an optional proof stat. A model is optional and off unless `HARKAT_LLM_API_KEY`, `OPENAI_API_KEY`, or `GROQ_API_KEY` is set. It may only return a scene plan. It never writes the animation. With no key, the same rules run every time.
+Studio takes a name, one-liner, URL, audience, goal, tone, length, features, and an optional proof stat. A director model is optional and off unless a free key is set (`GEMINI_API_KEY`, or Groq, OpenRouter, or Cloudflare as fallbacks). It returns a shot plan. It does not write the animation. With no key, the same rules run every time. See `HANDOFF.md` for which key to create.
 
 ## Render a hand-made film
 

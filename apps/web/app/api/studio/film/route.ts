@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { briefFromPrompt, composeWithModel, extractSite, fetchImageData, fetchPublicPage } from "@harkat/engine";
 import { clientIp, rateLimit, sameOrigin } from "@/lib/rateLimit";
 
+export const maxDuration = 30;
+
 function withProto(url: string) {
   const trimmed = url.trim();
   if (!trimmed) return "";
@@ -33,6 +35,7 @@ export async function POST(req: Request) {
     proof?: string;
     personalize?: boolean;
     prompt?: string;
+    seed?: string | number;
   };
   try {
     body = await req.json();
@@ -59,12 +62,14 @@ export async function POST(req: Request) {
   let accent = body.accent;
   let logo = body.logo;
   let siteText = "";
+  let brandFont = "";
   let note = invented ? "No website yet, so the end card uses a stand-in address." : "";
   if (url && personalize) {
     try {
       const page = await fetchPublicPage(withProto(url), { timeout: 3000, maxBytes: 700_000 });
       const site = extractSite(page.html, page.url);
-      siteText = `${site.name} ${site.tagline}`.trim();
+      siteText = [site.name, site.tagline, site.excerpt].filter(Boolean).join("\n").slice(0, 1200);
+      brandFont = site.font || "";
       if (!name && site.name) name = site.name;
       if (!problem && site.tagline) problem = site.tagline;
       if (!body.accentSet && site.color) accent = site.color;
@@ -100,7 +105,14 @@ export async function POST(req: Request) {
       tone: tones.find((item) => item === body.tone) ?? "plain",
       length: lengths.find((item) => item === Number(body.length)) ?? 30,
     },
-    { fontUrl: "/fonts/Geist-Variable.woff2", siteText, timeout: 4000 },
+    {
+      fontUrl: "/fonts/Geist-Variable.woff2",
+      siteText,
+      brandFont,
+      timeout: Number(process.env.HARKAT_DIRECTOR_BUDGET_MS) || 9000,
+      seed: body.seed,
+      ip: clientIp(req),
+    },
   );
   } catch {
     return NextResponse.json({ ok: false, reason: "The preview couldn’t be made just now. You can still order the film." }, { status: 500 });
@@ -116,6 +128,7 @@ export async function POST(req: Request) {
     accent: made.accent,
     planSource: made.planSource,
     planCost: made.planCost,
+    planNote: made.planNote || "",
     name: name || "",
     note,
   });

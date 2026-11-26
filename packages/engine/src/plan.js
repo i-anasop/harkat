@@ -11,12 +11,35 @@ export function hash(text) {
   return h >>> 0;
 }
 
-function highlightOf(words) {
+export function highlightOf(words) {
   for (let i = words.length - 1; i >= 0; i--) {
     const w = words[i];
     if (w.length > 2 && !ALLOW.has(w.toLowerCase())) return w;
   }
   return words.at(-1) || "";
+}
+
+/** Words the planner may show, plus the digits those words contain. `extra` is scraped site copy. */
+export function corpusOf(brief, extra = "") {
+  const text = [brief.name, brief.problem, brief.audience, brief.proof, ...(brief.features || []), brief.hostname, extra].join(" ");
+  const tokens = text.toLowerCase().match(/[a-z0-9'%+.-]+/g) ?? [];
+  const have = new Set(tokens);
+  for (const token of tokens) have.add(token.replace(/[.'%+]+$/g, ""));
+  return {
+    have,
+    digits: new Set(text.match(/\d+(?:\.\d+)?/g) ?? []),
+  };
+}
+
+export function wordOk(word, have, digits, allow = ALLOW) {
+  const bare = String(word).toLowerCase().replace(/[^a-z0-9'%+.-]/g, "");
+  const stem = bare.replace(/%$/, "");
+  if (!bare) return false;
+  if (allow.has(bare) || allow.has(stem)) return true;
+  if (have.has(bare) || have.has(stem)) return true;
+  const n = stem.match(/\d+(?:\.\d+)?/)?.[0];
+  if (n && digits.has(n) && stem.replace(n, "").replace(/[%+.-]/g, "") === "") return true;
+  return false;
 }
 
 export function vignetteFor(text, brief, used) {
@@ -83,26 +106,10 @@ export function rulePlan(brief) {
   return { goal: brief.goal, length: brief.length, tone: brief.tone, scenes };
 }
 
-function corpus(brief) {
-  return [brief.name, brief.problem, brief.audience, brief.proof, ...(brief.features || []), brief.hostname]
-    .join(" ")
-    .toLowerCase();
-}
-
-function knownWord(word, have) {
-  const bare = word.toLowerCase().replace(/[^a-z0-9'%+.-]/g, "");
-  const stem = bare.replace(/%$/, "");
-  if (!bare) return false;
-  if (ALLOW.has(bare) || ALLOW.has(stem)) return true;
-  if (have.has(bare) || have.has(stem)) return true;
-  return false;
-}
-
-export function validatePlan(plan, brief) {
+export function validatePlan(plan, brief, siteText = "") {
   if (!plan || typeof plan !== "object" || !Array.isArray(plan.scenes)) return { ok: false, reason: "Plan needs a scenes list." };
   if (plan.scenes.length < 3 || plan.scenes.length > 10) return { ok: false, reason: "Plan needs between 3 and 10 scenes." };
-  const have = new Set(corpus(brief).match(/[a-z0-9'%+.-]+/g) ?? []);
-  const allowedDigits = new Set(corpus(brief).match(/\d+(?:\.\d+)?/g) ?? []);
+  const { have, digits: allowedDigits } = corpusOf(brief, siteText);
   const scenes = [];
   for (const scene of plan.scenes) {
     if (!scene || typeof scene !== "object") return { ok: false, reason: "A scene is missing." };
@@ -116,7 +123,7 @@ export function validatePlan(plan, brief) {
     if (/[<>]/.test(copy)) return { ok: false, reason: "Scene copy cannot carry markup." };
     const words = copy.split(" ");
     if (words.some((word) => word.length > 24)) return { ok: false, reason: "A word is too long." };
-    if (!words.every((word) => knownWord(word, have))) return { ok: false, reason: "Scene copy uses words that are not in the brief." };
+    if (!words.every((word) => wordOk(word, have, allowedDigits))) return { ok: false, reason: "Scene copy uses words that are not in the brief." };
     const digits = copy.match(/\d+(?:\.\d+)?/g) ?? [];
     if (digits.some((n) => !allowedDigits.has(n))) return { ok: false, reason: "Scene copy adds a number that is not in the brief." };
     let highlight = "";

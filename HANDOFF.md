@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 26 Nov 2026, after the prompt-home polish (sidebar, metadata, composer). Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 26 Nov 2026, after the AI director (free-model shot plans, richer stage, quota). Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -16,7 +16,7 @@ Harkat AI makes cheap, agency-quality **2D motion-graphics launch films** for AI
 
 Two products share one site today:
 
-1. **The engine, on the home page.** A person describes a product (and can paste a website). The page posts to `/api/studio/film` and plays a sample film in the browser. Rules pick the scenes. An optional cheap LLM may only return a scene plan (~$0.0002 per film). A person still finishes any film a client pays for. The pictures are templates, not finished agency work. Past prompts stay in `localStorage` under `harkat.promptHistory` (no database).
+1. **The engine, on the home page.** A person describes a product (and can paste a website). The page posts to `/api/studio/film` and plays a sample film in the browser. With a free model key, a director model chooses the concept, the lines, and the shots. The engine compiles that into 2D motion (it does not run model-written HTML). With no key, or when the quota is spent, the old rule planner still runs. A person still finishes any film a client pays for. Past prompts stay in `localStorage` under `harkat.promptHistory` (no database).
 2. **The studio service, on `/pro`.** A client orders a film a person makes. Live prices are **Spark $30**, **Launch $50**, **Studio $100**. Older founding notes in `docs/04_OFFER_AND_BUSINESS.md` list $250 / $600 / $1,200. Those were **not** put on the site. Do not change the live prices unless Momin says so.
 
 Tagline: *Your motion team, without the agency.*
@@ -80,9 +80,15 @@ apps/web                 Next.js 16.4.6 site (React 19). This is the Vercel root
   proxy.ts               hides /admin unless ADMIN_KEY matches
 packages/engine          brief → film HTML. No network inside compose().
   src/brief.js           validate a brief, halal screen, logo sniff
-  src/plan.js            free rule planner + plan validator
-  src/llm.js             optional planner. Never writes animation.
-  src/scenes.js          scene objects + overlap guard
+  src/plan.js            free rule planner + plan validator (last resort)
+  src/llm.js             legacy one-call planner. Still exported. Not what /api/studio/film uses.
+  src/providers.js       free-first chat providers (Gemini, Groq, OpenRouter, Cloudflare, then paid)
+  src/direct.js          director pipeline, cache, daily caps, repair
+  src/dsl.js             shot schema, honesty check, grammar
+  src/stage.js           compiles a direction into 2D HTML (kinetic type, UI, grid, camera)
+  src/exemplars.js       four hand-authored directions (the quality bar and the mock model)
+  src/reel.js            local stills/mp4s of those films vs the rule planner
+  src/scenes.js          old template scenes + overlap guard
   src/layout.js          1920×1080 boxes, assertClear
   src/shell.js           wraps shots into one HTML page
   src/film.js            plan → html, duration, SFX cue list
@@ -132,7 +138,7 @@ API:
 
 | Method | Path | Role |
 |--------|------|------|
-| POST | `/api/studio/film` | Brief or a free-text `prompt` in, film HTML out. Same-origin, 30 previews / 10 min / IP. A prompt with no website uses `name.example` as a stand-in end card and does not fetch that host. |
+| POST | `/api/studio/film` | Brief or a free-text `prompt` in, film HTML out. Same-origin, 30 previews / 10 min / IP, plus a director cap (default 8/day/IP and 40/day global, per server instance). Optional `seed` varies the film. A prompt with no website uses `name.example` as a stand-in end card and does not fetch that host. |
 | POST | `/api/order` | Save an order. Altcha, honeypot, halal screen, rate limit. |
 | GET | `/api/altcha` | Challenge for the “I’m not a robot” widget. |
 | POST | `/api/pay/invoice` | Open a NOWPayments invoice. |
@@ -149,27 +155,31 @@ API:
 ## How the engine builds a film
 
 ```
-brief
+brief + scraped brand (name, tagline, excerpt, colour, real logo, font name)
   → readBrief (clean, require name / problem / one feature / real hostname, halal, logo sniff)
-  → planner
-       free: rulePlan() in plan.js
-       or optional LLM: planWithModel() in llm.js, then validatePlan()
-       if the model plan fails layout, composeWithModel falls back to rules
-  → buildShots() in scenes.js
-  → assertClear() overlap guard in layout.js
-  → page() in shell.js → one HTML file whose JS draws frame t
+  → director, only when a provider key is set and the quota allows
+       1. concept: treatment, rhythm, layout sequence
+       2. beats: lines, words restricted to the brief and the scraped text
+       3. shots: layout, motion, camera, enter, ground, sfx
+       one repair if a step is not valid JSON
+       under a 14s budget this collapses to one call that returns all three
+       cache by hash of brief + seed (6 hours). A UTC day is the default seed.
+  → normalizeDirection(): drop invented words, fill missing motion, force the end card
+  → stage.js places the boxes, assertClear() refuses an overlap
+  → one HTML file whose JS draws frame t
   → cues: whoosh / tick / ui / click / thud / chime, peak-aligned
+  → any failure, empty key, or a full quota falls back to rulePlan() + scenes.js
 ```
 
-`compose(input)` does this with **no network**. `composeWithModel(input)` may call the planner and is what `/api/studio/film` uses.
+`compose(input)` is still the rule path and does **no network**. `composeWithModel(input)` is what `/api/studio/film` uses.
 
 ### Brief
 
 Required: product name (≥2 chars), problem or one-liner (≥8 chars), at least one feature, a real `http(s)` hostname. Optional: audience, proof stat, accent `#RRGGBB` (default `#2E4BDB`), logo data-URL (png/jpeg/webp/svg/gif, under ~80KB, no script/iframe/foreignObject), goal `launch | feature | explainer`, tone `quiet | plain | bold`, length `15 | 30 | 45`. Older template names map onto goals: `workflow` → feature, `holo` → explainer, `launch` → launch. `sample: true` marks the film as a sample (Studio always sends this).
 
-### Planner
+### Rule planner (last resort)
 
-`rulePlan` clips words out of the brief. It does not invent a sentence.
+`rulePlan` clips words out of the brief. It does not invent a sentence. It still feeds `scenes.js`, which is the old template look.
 
 - Not a feature film: a **problem** beat (vignette `limit`).
 - **Intro**: the product name.
@@ -179,7 +189,33 @@ Required: product name (≥2 chars), problem or one-liner (≥8 chars), at least
 
 Scene types: `problem | intro | benefit | proof | cta`. Vignettes: `limit | code | search | toggle | chart | chat | cards`.
 
-The LLM is optional and **off when every key is blank**. It may return only that JSON scene list. The prompt forbids HTML, CSS, JS, and animation, and forbids words that are not in the brief or the scraped site text. `validatePlan` rejects anything else. Temperature 0, max 400 tokens. Default model `gpt-4o-mini` (or `llama-3.3-70b-versatile` on Groq). Cost is logged as `harkat planner source=... in=... out=... usd=...`. Defaults match gpt-4o-mini list price ($0.15 / $0.60 per million tokens), which lands near **$0.0002 per film**. Override with `HARKAT_LLM_PRICE_IN` / `HARKAT_LLM_PRICE_OUT` (dollars per million tokens). A failed or slow call (Studio timeout 4s) falls back to rules and costs $0.
+### Director
+
+The model does not write HTML, CSS, or JavaScript. It returns JSON. `stage.js` draws it. Visible words have to already be in the brief or the scraped page (plus a short glue list: introducing, open, sample, and articles). A number that is not in the brief is rejected. Halal still runs on the brief, and on the concept line even though that line is never shown.
+
+Layouts: `kinetic`, `stage`, `split`, `grid`, `dashboard`, `meter`, `checklist`, `counter`, `flow`, `lockup`, `search`, `ticker`, `end`.
+
+Motion is 2D only: letter reveals, masks, rises, scale-through, a push or a pan, a whip enter. No perspective, no rotateX/rotateY. A counter is used only when the line ends in a number from the brief (`Up to 98%`). The end card is the hostname on the brand colour. SFX only.
+
+`exemplars.js` holds four hand-authored films (Keel, Linear, North, Lumen). Tests compile them. They are also what `node packages/engine/src/reel.js` renders. A live model is not required for those.
+
+Cost is logged as `harkat director source=... in=... out=... usd=... note=...`. Free providers log `usd=0.000000`. A cache hit logs `source=cache` and does not spend a quota slot. The response field `planNote` is `gemini` (or whichever provider answered), `cache`, `no-key`, `quota`, or `off`. `planSource` stays `model` or `rules`, which is what the page already understands.
+
+Caps, per server instance (same shape as the IP limiter; not a global database):
+
+| Env | Default | Meaning |
+|-----|---------|---------|
+| `HARKAT_DIRECTOR_IP_DAY` | 8 | Director films per IP per UTC day. Cache hits are free. |
+| `HARKAT_DIRECTOR_GLOBAL_DAY` | 40 | Director films per instance per UTC day. |
+| `HARKAT_DIRECTOR_TOKEN_BUDGET` | 4500 | Input + output tokens per film, then the call stops. |
+| `HARKAT_DIRECTOR_BUDGET_MS` | 9000 on the API | Wall clock. Under 14000ms the director makes one call. 20000ms makes three. |
+| `HARKAT_DIRECTOR_STEPS` | auto | Force `1` or `3`. |
+| `HARKAT_DIRECTOR` | | `0` forces the rule planner even if a key is set. |
+| `HARKAT_DIRECTOR_ALLOW_PAID` | | `1` lets a paid key run after a free key fails. Off, a paid key is used only when it is the only key. |
+
+The route sets `maxDuration = 30`. The default 9s budget is one model call so a 10-second platform limit still returns a film (rules, if the model is slow). Raise `HARKAT_DIRECTOR_BUDGET_MS` to `20000` when the Vercel plan actually allows 30 seconds. That turns on concept → beats → shots.
+
+`planWithModel` in `llm.js` is still exported. Groq’s default model there is now `openai/gpt-oss-120b`, because `llama-3.3-70b-versatile` was shut off for free and developer accounts on 16 Aug 2026. The studio route does not call `planWithModel`.
 
 ### Scenes and the overlap guard
 
@@ -275,17 +311,60 @@ Copy `.env.example` to `apps/web/.env.local`. On Vercel, set the same names on t
 | `NOWPAYMENTS_API_KEY` | NOWPayments API key. Crypto checkout stays off until this **and** the IPN secret are set. Card checkout is not automated. |
 | `NOWPAYMENTS_IPN_SECRET` | Verifies the IPN webhook (HMAC-SHA512). |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (private) for order JSON. On Vercel, orders return 503 without it. Locally, orders go to `apps/web/data/orders/*.json` (gitignored). |
-| `GROQ_API_KEY` | Optional planner. Used when set and `OPENAI_API_KEY` is not. Base `https://api.groq.com/openai/v1`, model `llama-3.3-70b-versatile`. |
-| `OPENAI_API_KEY` | Optional planner. OpenAI-compatible chat completions. |
-| `HARKAT_LLM_API_KEY` | Optional planner. Wins over Groq and OpenAI when set. |
-| `HARKAT_LLM_BASE_URL` | OpenAI-compatible base. Default `https://api.openai.com/v1`. |
-| `HARKAT_LLM_MODEL` | Model name. Default `gpt-4o-mini`, or the Groq llama model when that key is the one in use. |
-| `HARKAT_LLM_PRICE_IN` | Dollars **per million** input tokens, for the cost log. Default `0.15`. |
+| `GEMINI_API_KEY` | **The key to create.** Free director. See the section below. |
+| `GEMINI_MODEL` | Optional. Default `gemini-3.5-flash-lite`. |
+| `GROQ_API_KEY` | Free director fallback. Default model `openai/gpt-oss-120b`. |
+| `GROQ_MODEL` | Optional override for the Groq model id. |
+| `OPENROUTER_API_KEY` | Free director fallback. Default model `openrouter/free`. |
+| `OPENROUTER_MODEL` | Optional. Keep a `:free` id or `openrouter/free` if this must stay $0. |
+| `CLOUDFLARE_API_TOKEN` | Workers AI token. Used only together with the account id. |
+| `CLOUDFLARE_ACCOUNT_ID` | Account id in the Workers AI base URL. Not a secret of the same kind, but do not commit a real one. |
+| `CLOUDFLARE_AI_MODEL` | Optional. Default `@cf/meta/llama-3.1-8b-instruct`. |
+| `CEREBRAS_API_KEY` | Not a renewable free tier. Used only when no free key is set, unless paid fallback is on. |
+| `CEREBRAS_MODEL` | Optional. Default `qwen-3.8-27b`. |
+| `MISTRAL_API_KEY` | Not free API access. Same rule as Cerebras. |
+| `MISTRAL_MODEL` | Optional. Default `mistral-small-latest`. |
+| `OPENAI_API_KEY` | Paid. Used only when no free key is set, unless `HARKAT_DIRECTOR_ALLOW_PAID=1`. |
+| `HARKAT_LLM_API_KEY` | Paid OpenAI-compatible endpoint. Same rule. Wins over `OPENAI_API_KEY` when both are set. |
+| `HARKAT_LLM_BASE_URL` | Base for the Harkat/OpenAI provider. Default `https://api.openai.com/v1`. |
+| `HARKAT_LLM_MODEL` | Model for that provider. Default `gpt-4o-mini`. |
+| `HARKAT_LLM_PRICE_IN` | Dollars **per million** input tokens, for the cost log of the paid provider. Default `0.15`. |
 | `HARKAT_LLM_PRICE_OUT` | Dollars per million output tokens. Default `0.60`. |
+| `HARKAT_DIRECTOR` | `0` forces the rule planner. |
+| `HARKAT_DIRECTOR_STEPS` | `1` or `3`. Empty follows the time budget. |
+| `HARKAT_DIRECTOR_BUDGET_MS` | Milliseconds for one preview. API default 9000. Set `20000` for three steps. |
+| `HARKAT_DIRECTOR_IP_DAY` | Director films per IP per UTC day. Default 8. |
+| `HARKAT_DIRECTOR_GLOBAL_DAY` | Director films per instance per UTC day. Default 40. |
+| `HARKAT_DIRECTOR_TOKEN_BUDGET` | Tokens per film. Default 4500. |
+| `HARKAT_DIRECTOR_ALLOW_PAID` | `1` allows a paid provider to run after the free ones fail. |
 | `HARKAT_SKIP_LIVE` | `1` skips the linear.app fetch inside `npm run sample`. Not a site variable. |
 | `VERCEL` | Set by Vercel. The order route uses it to refuse saves when Blob is missing. |
 
-The planner never sees these keys in the film. Do not log the key values.
+The director never puts these keys in the film or in the log line. Do not log the key values.
+
+### Which free key Momin should create
+
+Checked 26 Nov 2026. Limits move. The links below are the consoles. After creating a key, set it on the Vercel project (Root Directory `apps/web`) and in `apps/web/.env.local`. Do not commit it.
+
+**Create this one first.**
+
+1. **Gemini** — [Google AI Studio API keys](https://aistudio.google.com/apikey). Vercel env: `GEMINI_API_KEY`. The engine calls `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` with model `gemini-3.5-flash-lite`. That model is on the free tier. `gemini-2.5-flash` is deprecated for new projects and, from 1 Dec 2026, routes to Flash-Lite anyway. Google does not publish one RPM number for every project. One free project read in Oct 2026 showed about **15 requests/minute and 500 requests/day** for Flash-Lite, and about 20/day for the larger Flash models. Check the project’s own limit page in AI Studio. A three-step film is three requests. The default API budget is one request.
+
+**Add one of these if Gemini rate-limits.** The engine tries them in this order and skips any key that is blank.
+
+2. **Groq** — [console.groq.com/keys](https://console.groq.com/keys). Vercel env: `GROQ_API_KEY`. Model `openai/gpt-oss-120b`. Free-plan table (Groq’s own limits page, Nov 2026): about **30 requests/minute, 1,000/day, 8,000 tokens/minute, 200,000 tokens/day**. The token-per-minute cap is the tight one, so a long prompt can 429 and the engine moves on. Do not set the old `llama-3.3-70b-versatile` id. Groq shut that model off for free and developer accounts on 16 Aug 2026.
+
+3. **OpenRouter** — [openrouter.ai/keys](https://openrouter.ai/keys). Vercel env: `OPENROUTER_API_KEY`. Model `openrouter/free` (it only routes to free models). Free variants are about **20 requests/minute and 50/day** until the account has bought credits. Leave `OPENROUTER_MODEL` empty so it stays on the free router.
+
+4. **Cloudflare Workers AI** — [REST setup](https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/). Vercel env: `CLOUDFLARE_API_TOKEN` **and** `CLOUDFLARE_ACCOUNT_ID`. Both are required. Free allocation: **10,000 Neurons/day**, reset 00:00 UTC, on the Workers Free plan. Default model `@cf/meta/llama-3.1-8b-instruct` (weaker JSON than Gemini; it is a fallback).
+
+**Do not create these expecting them to be free.**
+
+- **Cerebras** — [cloud.cerebras.ai](https://cloud.cerebras.ai). A new account gets **$5 of credits after a payment method is added**. The credits expire after 30 days. There is no renewing free tier. `CEREBRAS_API_KEY` works, but it is not used when a free key is set unless `HARKAT_DIRECTOR_ALLOW_PAID=1`.
+- **Mistral** — [console.mistral.ai](https://console.mistral.ai). As of Nov 2026 the free plan includes Vibe and Studio, **not API calls**. API access needs billing. `MISTRAL_API_KEY` is supported under the same paid rule.
+- **OpenAI** and `HARKAT_LLM_API_KEY` — paid. Same rule. Leave them unset if the goal is $0.
+
+No key was set in the environment that built this. The pipeline was tested with recorded model replies in `exemplars.js`. A live preview stays on the rule planner until `GEMINI_API_KEY` (or another key above) is set. Spam still gets a film: the cap falls back to rules and costs nothing.
 
 ---
 
@@ -338,7 +417,7 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 
 ## Known gaps
 
-- **The films all look the same.** A different sentence still lands on the same templates: a title on a brand field, a dashboard, a card, a ring, a chart. Momin called this out on 26 Nov 2026. Do not patch it with another small layout pass. The next big piece of work is a major engine upgrade toward the style of the best motion-graphics launch videos on X. Until that ships, a paid film is still finished by a person. Do not sell the raw preview as the delivered film.
+- **The director is in, and it is not agency-final.** With a key, two briefs no longer share one template sequence: a dev tool can open on a meter, a finance tool on a colour field, a design tool on a grid, with a product window, a checklist, a flow, a ticker, or a counter, then the hostname on the brand colour. Without a key, the old templates still run, on purpose. The pictures are still a layout system, not a frame-by-frame film. The reference sheets (Runinfra, Reason, Synteq, Holo, the people-search film, the Pinterest concept) have custom illustration and tighter timing than this stage can draw. A paid film is still finished by a person. Do not sell the raw preview as the delivered film.
 - Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The `/pro` reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, and 414 found `scrollWidth === clientWidth` on `/`, `/pro`, `/work`, `/process`, `/docs`, and `/paid`, including after a film was generated.
 - Domain is not chosen. Brand-kit notes mention Cloudflare Pages; the site is actually set up for **Vercel**.
 - No bank/card checkout. Crypto only, and only when NOWPayments keys are present.
@@ -352,10 +431,10 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 
 Do these in order. Do not skip ahead to marketing while the films and the phone experience are still weak.
 
-1. **Finish the product and the testing.** The phone layout and the prompt home are in. What is still unfinished is the pictures: the engine still cuts templates. Tests and `next build` stay green.
+1. **Finish the product and the testing.** The phone layout, the prompt home, and the director are in. What is still unfinished is the last mile of the pictures: the stage is a designed system, not a bespoke film. Tests and `next build` stay green. Set `GEMINI_API_KEY` before judging a live preview.
 2. **Production.** Bank (or another real payout path), a domain, then go live. Vercel root must be `apps/web` before that deploy. Blob, Altcha, and NOWPayments keys have to be set or orders and payments do nothing.
 3. **Marketing.** LinkedIn and X already exist as brands. Do this after the product is something Momin will send to a stranger.
-4. **Next big build: a major engine quality upgrade** toward the style of the best motion-graphics launch videos on X (the Pond / “Pratham” references in `docs/03_MOTION_CRAFT_AND_STYLES.md` and `ITERATIONS.md`). That means the pictures and the motion, not a new page around the same templates. Keep every hard rule above. A paid film is still finished by a person until that upgrade is honestly close.
+4. **Keep pushing the pictures** toward the reference sheets in the handoff notes (kinetic type, UI mocks, masks, scale-through, brand colour, 2D, SFX only). The director is the system those pictures come out of. The next gain is richer components inside `stage.js`, not another template in `scenes.js`, and not model-written HTML. A paid film is still finished by a person until that is honestly close.
 
 ---
 
@@ -368,6 +447,12 @@ Three commits on `main`, in this order:
 3. **The prompt is the home page.** Layout ideas came from the old MotionGPT chat in `ana-momin/Startup` (`Startup 001/apps/studio`): a centred box, a thread under it, a history sidebar. Colours are Harkat’s, not MotionGPT’s. `/pro` is the previous landing, with the same work, prices, and order flow. `/studio` redirects home.
 4. **Prompt-home polish (same day).** The tab title is `Harkat — AI launch films for startups`. The sidebar collapses to an icon rail (`harkat.sidebar`). History is grouped (Pinned, Today, Yesterday, Previous 7 days, Older) with rename, pin, and a confirmed delete. Search filters it. A website is a chip inside the box (`/api/brand` for the colour, `/api/favicon` for the mark). Length is a clock button, default 15s. Suggestion chips are gone. Scrollbars on this page are thin and only show on hover. MotionGPT’s light/dark switch is here as `harkat.theme` on the prompt page only; `/pro` stays light. The pictures were not changed.
 5. **Typing no longer crashes the page.** `useSyncExternalStore` was given `() => Date.now()`. React calls that on every render, sees a new number, and renders again until it dies — the “This page couldn’t load” screen, including while typing. The day used to group history is now cached (`apps/web/lib/homeState.mjs`). Saved films from older versions, and corrupt JSON, are ignored instead of thrown. `HomeBoundary` catches anything left and can clear the saved list. Do not put `Date.now()` in a store snapshot.
+
+## What changed on 26 Nov 2026 (director)
+
+The rule planner is still the fallback. `/api/studio/film` now asks a director model, when a free key is set, for a concept, then beats, then a shot list. `stage.js` compiles that into the film. Words that are not in the brief are rejected. Overlap still fails the build. One bad JSON reply is repaired once. The same brief is cached; a `seed` (or the next UTC day) changes it. Eight films per IP per day and forty per instance, then the preview falls back to rules. No key, no charge.
+
+Hand-authored stand-ins, so the stage can be judged without a key: Keel (meter, type, window, `98%`), Linear (search, checklist), North (colour field, dashboard, flow), Lumen (grid, ticker). Render them with `node packages/engine/src/reel.js` and `node packages/engine/src/reel.js --mp4`. They are not the old template look. They are also not the reference films. Honest gap: simple windows, no custom illustration, timing is a weighted shot list.
 
 ## Working agreement
 

@@ -8,10 +8,12 @@ export { briefFromPrompt } from "./prompt.js";
 export { SAMPLE_BRIEF, SAMPLES } from "./sample.js";
 export { beats } from "./motion.js";
 export { buildShots } from "./scenes.js";
+export { compileDirection, directFilm, estimateDirectorCost, resetDirectorState } from "./direct.js";
+export { configuredProviders } from "./providers.js";
 
 import { readBrief } from "./brief.js";
+import { directFilm } from "./direct.js";
 import { buildFilm } from "./film.js";
-import { planWithModel } from "./llm.js";
 import { rulePlan } from "./plan.js";
 
 function finish(brief, opts) {
@@ -29,17 +31,28 @@ export function compose(input, opts = {}) {
   return finish(read.brief, opts);
 }
 
-/** Same as compose. A model may plan scenes when an API key is set. It never writes animation. */
+function ruled(brief, opts, note) {
+  const made = finish(brief, { ...opts, plan: rulePlan(brief) });
+  if (!made.ok) return made;
+  return { ...made, planSource: "rules", planCost: 0, planTokens: { in: 0, out: 0 }, planNote: note };
+}
+
+/**
+ * Same as compose when no model key is set.
+ * With a key, a director model chooses the shots. A failed call falls back to the rule plan.
+ */
 export async function composeWithModel(input, opts = {}) {
   const read = readBrief(input);
   if (!read.ok) return read;
-  const planned = await planWithModel(read.brief, opts);
-  const made = finish(read.brief, { ...opts, plan: planned.plan });
-  if (!made.ok && planned.source === "model") {
-    const again = finish(read.brief, { ...opts, plan: rulePlan(read.brief) });
-    if (!again.ok) return again;
-    return { ...again, planSource: "rules", planCost: 0, planTokens: { in: 0, out: 0 } };
-  }
-  if (!made.ok) return made;
-  return { ...made, planSource: planned.source, planCost: planned.cost, planTokens: planned.tokens };
+  if (opts.model === false || process.env.HARKAT_DIRECTOR === "0") return ruled(read.brief, opts, "off");
+  const directed = await directFilm(read.brief, opts);
+  if (!directed.ok) return ruled(read.brief, opts, directed.reason || "rules");
+  return {
+    ok: true,
+    ...directed.film,
+    planSource: "model",
+    planCost: directed.cost,
+    planTokens: directed.tokens,
+    planNote: directed.note || "model",
+  };
 }

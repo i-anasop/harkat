@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { beats } from "../src/motion.js";
 import { compose, composeWithModel, SAMPLE_BRIEF, SAMPLES, screenText } from "../src/index.js";
+import { PROVIDER_ENV } from "../src/providers.js";
 
 test("halal screen declines gambling, betting, adult, alcohol and drugs", () => {
   assert.equal(screenText("a sportsbook for friends").ok, false);
@@ -82,7 +83,7 @@ test("stagger beats stay inside 100 to 200ms", () => {
 });
 
 test("without a model key the planner stays on the rules", async () => {
-  const saved = ["HARKAT_LLM_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY"].map((key) => [key, process.env[key]]);
+  const saved = PROVIDER_ENV.map((key) => [key, process.env[key]]);
   for (const [key] of saved) delete process.env[key];
   try {
     const made = await composeWithModel(SAMPLE_BRIEF);
