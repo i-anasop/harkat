@@ -59,3 +59,6 @@ export function fetchPublicPage(url: string, opts?: { timeout?: number; maxBytes
 export function fetchImageData(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<string | null>;
 export function isBlockedIp(ip: string): boolean;
 export function estimatePlannerCost(brief: { name?: string; problem?: string; features?: string[]; audience?: string; goal?: string; tone?: string; length?: number; proof?: string; hostname?: string }, siteText?: string): { inputTokens: number; outputTokens: number; usd: number };
+export function briefFromPrompt(prompt: string, url?: string):
+  | { ok: true; name: string; problem: string; features: string[]; url: string; inventedHost: boolean }
+  | { ok: false; reason: string };

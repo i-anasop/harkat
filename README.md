@@ -24,7 +24,7 @@ cp .env.example apps/web/.env.local   # optional
 npm run dev
 ```
 
-Open http://localhost:3000. Studio is at http://localhost:3000/studio.
+Open http://localhost:3000. That page is the prompt. The marketing site and orders are at http://localhost:3000/pro. `/studio` redirects home.
 
 ## Render the sample films
 

@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 26 Nov 2026, after the mobile pass. The prompt-home rebuild is not in yet. Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 26 Nov 2026, after the mobile pass and the prompt home. Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -16,8 +16,8 @@ Harkat AI makes cheap, agency-quality **2D motion-graphics launch films** for AI
 
 Two products share one site today:
 
-1. **The engine (Studio).** A short brief becomes a sample film in the browser. Rules pick the scenes. An optional cheap LLM may only return a scene plan (~$0.0002 per film). A person still finishes any film a client pays for. The pictures are templates, not finished agency work.
-2. **The studio service.** A client orders a film a person makes. Live prices are **Spark $30**, **Launch $50**, **Studio $100**. Older founding notes in `docs/04_OFFER_AND_BUSINESS.md` list $250 / $600 / $1,200. Those were **not** put on the site. Do not change the live prices unless Momin says so.
+1. **The engine, on the home page.** A person describes a product (and can paste a website). The page posts to `/api/studio/film` and plays a sample film in the browser. Rules pick the scenes. An optional cheap LLM may only return a scene plan (~$0.0002 per film). A person still finishes any film a client pays for. The pictures are templates, not finished agency work. Past prompts stay in `localStorage` under `harkat.promptHistory` (no database).
+2. **The studio service, on `/pro`.** A client orders a film a person makes. Live prices are **Spark $30**, **Launch $50**, **Studio $100**. Older founding notes in `docs/04_OFFER_AND_BUSINESS.md` list $250 / $600 / $1,200. Those were **not** put on the site. Do not change the live prices unless Momin says so.
 
 Tagline: *Your motion team, without the agency.*
 Hero line in the brand kit: *Product films that move.*
@@ -113,10 +113,11 @@ There is no database. Orders are JSON files. History for a future prompt UI, if 
 
 | Path | What it is |
 |------|------------|
-| `/` | Marketing home: hero, hero film, Pond logo, work reel, stats, order panel (`#order`) |
+| `/` | The product. A ChatGPT-style prompt: describe the product, optional website (logo and colours), length 15/30/45. The sample film plays in the thread. History is a sidebar (a drawer on a phone). “Hire a pro” goes to `/pro`. |
+| `/pro` | The old marketing home: hero, hero film, Pond logo, work reel, stats, order panel (`#order`). |
 | `/work` | Portfolio. Pond films only if the env flag is on. |
 | `/process` | How a film is made, FAQ |
-| `/studio` | Brief form. Posts to `/api/studio/film`. Preview is HTML in the page, with generated SFX in the browser. |
+| `/studio` | Redirects to `/`. The old form is gone. |
 | `/docs` | Docs index |
 | `/docs/how-we-make-films` | Pipeline, in public language |
 | `/docs/halal` | What Harkat will not make |
@@ -125,13 +126,13 @@ There is no database. Orders are JSON files. History for a future prompt UI, if 
 | `/docs/terms`, `/docs/privacy` | Legal |
 | `/paid` | NOWPayments return page. The IPN, not this page, marks the order paid. |
 | `/admin` | Order list. 404 unless `ADMIN_KEY` is set and the cookie matches. Open `/admin?key=...` once. |
-| `/order` | Redirects to `/#order` |
+| `/order` | Redirects to `/pro#order` |
 
 API:
 
 | Method | Path | Role |
 |--------|------|------|
-| POST | `/api/studio/film` | Brief in, film HTML out. Same-origin, 30 previews / 10 min / IP. |
+| POST | `/api/studio/film` | Brief or a free-text `prompt` in, film HTML out. Same-origin, 30 previews / 10 min / IP. A prompt with no website uses `name.example` as a stand-in end card and does not fetch that host. |
 | POST | `/api/order` | Save an order. Altcha, honeypot, halal screen, rate limit. |
 | GET | `/api/altcha` | Challenge for the “I’m not a robot” widget. |
 | POST | `/api/pay/invoice` | Open a NOWPayments invoice. |
@@ -212,7 +213,7 @@ cp .env.example apps/web/.env.local   # optional; blanks are fine
 npm run dev                           # http://localhost:3000
 ```
 
-Studio: http://localhost:3000/studio.
+The prompt is http://localhost:3000. The marketing site and the order form are http://localhost:3000/pro. `/studio` redirects home.
 
 From the repo root:
 
@@ -299,7 +300,7 @@ The planner never sees these keys in the film. Do not log the key values.
 
   Install runs at the monorepo root so `apps/web` and `packages/engine` both install. Build is `next build` from `apps/web` (`apps/web/package.json`). `outputFileTracingRoot` is the monorepo root when `packages/engine` is visible, so the engine is traced into the function bundle.
 - Next.js **16.4.6**. Read `apps/web/node_modules/next/dist/docs/` before inventing APIs. This app uses `proxy.ts` (not `middleware.ts`) for the admin gate, and `cacheComponents` / `partialPrefetching` in `next.config.ts`.
-- **Studio preview on Vercel is in-browser HTML, not an mp4.** `/api/studio/film` returns `{ html, duration, events, ... }`. The page plays that HTML. Do not add Playwright or ffmpeg to the Vercel function.
+- **The home preview on Vercel is in-browser HTML, not an mp4.** `/api/studio/film` returns `{ html, duration, events, ... }`. The page plays that HTML. Do not add Playwright or ffmpeg to the Vercel function.
 - **Orders need `BLOB_READ_WRITE_TOKEN` and `ALTCHA_HMAC_KEY`.** Without Blob, production order POSTs return 503 and tell the visitor to email `reach.harkat@gmail.com`. Without the HMAC key, the robot check cannot pass.
 - **Payments** are crypto via NOWPayments (`NOWPAYMENTS_API_KEY` + `NOWPAYMENTS_IPN_SECRET`). USDT and others. The pay box opens `invoiceUrl`. IPN marks the order paid. `/paid` is only the browser return. Bank transfer and JazzCash / EasyPaisa are mentioned in the terms as coming later. There is no Stripe.
 - CSP and the other security headers are in `next.config.ts`. Do not loosen `frame-ancestors` or `script-src` to “make a preview work”.
@@ -326,9 +327,9 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 ## What is done
 
 - One public repo. Site, engine, generated SFX, hand-made hero, four Pond films in `apps/web/public/films`.
-- Marketing pages: home, work, process, docs (including halal, terms, privacy, Pond story), paid-return page.
-- Order flow with plan picker, brief, Altcha, terms + halal pledge, NOWPayments, admin list.
-- Studio: form → `/api/studio/film` → HTML preview + Web Audio ticks. Rate limit, same-origin, size cap, halal, escaped text.
+- Marketing pages live at `/pro`, plus work, process, docs (including halal, terms, privacy, Pond story), and the paid-return page.
+- Order flow with plan picker, brief, Altcha, terms + halal pledge, NOWPayments, admin list. Prices unchanged.
+- Home is the prompt. A sentence (optional website, length) → `/api/studio/film` → HTML preview + Web Audio ticks in the thread. History is `localStorage`. Rate limit, same-origin, size cap, halal, escaped text. `briefFromPrompt` in `packages/engine/src/prompt.js` turns the sentence into a brief. No website means a `name.example` stand-in, not a fetched host.
 - Engine: rule planner, optional LLM planner with a hard schema, overlap guard, two samples (Keel, Linear), tests.
 - SFX mixer at about −22 LUFS. No music path exists.
 - Deploy config for a monorepo Vercel project rooted at `apps/web`.
@@ -338,8 +339,7 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 ## Known gaps
 
 - Generated films are still templates: a title on a brand field, a dashboard, a card, a ring, a chart. They are not agency-quality launch films. Do not sell the raw Studio output as the delivered film.
-- Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The home reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, 414, 768, and 1280 found `scrollWidth === clientWidth` on every public page.
-- Studio is a separate form page, not the front door. The engine is not yet the main product.
+- Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The `/pro` reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, and 414 found `scrollWidth === clientWidth` on `/`, `/pro`, `/work`, `/process`, `/docs`, and `/paid`, including after a film was generated.
 - Domain is not chosen. Brand-kit notes mention Cloudflare Pages; the site is actually set up for **Vercel**.
 - No bank/card checkout. Crypto only, and only when NOWPayments keys are present.
 - Pond SFX kit is not in the repo. Samples use `packages/sfx` synthesis.
@@ -352,12 +352,20 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 
 Do these in order. Do not skip ahead to marketing while the films and the phone experience are still weak.
 
-1. **Finish the product and the testing.** The site has to feel native on a phone. The engine should be the thing people try first. Tests and `next build` stay green.
+1. **Finish the product and the testing.** The phone layout and the prompt home are in. What is still unfinished is the pictures: the engine still cuts templates. Tests and `next build` stay green.
 2. **Production.** Bank (or another real payout path), a domain, then go live. Vercel root must be `apps/web` before that deploy. Blob, Altcha, and NOWPayments keys have to be set or orders and payments do nothing.
 3. **Marketing.** LinkedIn and X already exist as brands. Do this after the product is something Momin will send to a stranger.
 4. **Next big build: a major engine quality upgrade** toward the style of the best motion-graphics launch videos on X (the Pond / “Pratham” references in `docs/03_MOTION_CRAFT_AND_STYLES.md` and `ITERATIONS.md`). That means the pictures and the motion, not a new page around the same templates. Keep every hard rule above. A paid film is still finished by a person until that upgrade is honestly close.
 
 ---
+
+## What changed on 26 Nov 2026
+
+Three commits on `main`, in this order:
+
+1. **`HANDOFF.md`.** This file.
+2. **Phone layout.** Removed `overflow-x` from `html`, `body`, and `.page` (that was what made scrolling feel dead). Stacked the marketing reel under 860px, swapped `100vh` for `100dvh`, stopped using `100vw`, raised tap targets to 44px, set form text to 16px, and added a real menu under 720px. Decorative loops and the grain filter stay off on small screens so a finger-drag is not fighting them.
+3. **The prompt is the home page.** Layout ideas came from the old MotionGPT chat in `ana-momin/Startup` (`Startup 001/apps/studio`): a centred box, a thread under it, a history sidebar. Colours are Harkat’s, not MotionGPT’s. `/pro` is the previous landing, with the same work, prices, and order flow. `/studio` redirects to `/`.
 
 ## Working agreement
 

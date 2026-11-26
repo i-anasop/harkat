@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { composeWithModel, extractSite, fetchImageData, fetchPublicPage } from "@harkat/engine";
+import { briefFromPrompt, composeWithModel, extractSite, fetchImageData, fetchPublicPage } from "@harkat/engine";
 import { clientIp, rateLimit, sameOrigin } from "@/lib/rateLimit";
 
 function withProto(url: string) {
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     audience?: string;
     proof?: string;
     personalize?: boolean;
+    prompt?: string;
   };
   try {
     body = await req.json();
@@ -39,16 +40,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, reason: "That brief could not be read." }, { status: 400 });
   }
 
-  const features = Array.isArray(body.features) ? body.features.filter((f): f is string => typeof f === "string") : [];
+  let features = Array.isArray(body.features) ? body.features.filter((f): f is string => typeof f === "string") : [];
   let name = body.name;
   let problem = body.problem || body.oneLiner;
+  let url = typeof body.url === "string" ? body.url : "";
+  let personalize = body.personalize !== false;
+  let invented = false;
+  if (typeof body.prompt === "string" && body.prompt.trim()) {
+    const parsed = briefFromPrompt(body.prompt, url);
+    if (!parsed.ok) return NextResponse.json(parsed, { status: 422 });
+    if (!name) name = parsed.name;
+    if (!problem) problem = parsed.problem;
+    if (!features.length) features = parsed.features;
+    if (!url) url = parsed.url;
+    invented = parsed.inventedHost;
+    if (invented) personalize = false;
+  }
   let accent = body.accent;
   let logo = body.logo;
   let siteText = "";
-  let note = "";
-  if (body.url && body.personalize !== false) {
+  let note = invented ? "No website yet, so the end card uses a stand-in address." : "";
+  if (url && personalize) {
     try {
-      const page = await fetchPublicPage(withProto(body.url), { timeout: 3000, maxBytes: 700_000 });
+      const page = await fetchPublicPage(withProto(url), { timeout: 3000, maxBytes: 700_000 });
       const site = extractSite(page.html, page.url);
       siteText = `${site.name} ${site.tagline}`.trim();
       if (!name && site.name) name = site.name;
@@ -64,6 +78,7 @@ export async function POST(req: Request) {
       note = "We couldn’t read that site from here, so this preview uses what you typed.";
     }
   }
+  if (!features.length && problem) features = [problem];
 
   const goals = ["launch", "feature", "explainer"] as const;
   const tones = ["quiet", "plain", "bold"] as const;
@@ -76,7 +91,7 @@ export async function POST(req: Request) {
       problem,
       features,
       accent,
-      url: body.url,
+      url,
       logo,
       sample: true,
       audience: body.audience,
@@ -101,6 +116,7 @@ export async function POST(req: Request) {
     accent: made.accent,
     planSource: made.planSource,
     planCost: made.planCost,
+    name: name || "",
     note,
   });
 }

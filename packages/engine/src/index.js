@@ -4,6 +4,7 @@ export { rulePlan, validatePlan } from "./plan.js";
 export { assertClear, contentRatio } from "./layout.js";
 export { extractSite, vetUrl, isBlockedIp, fetchPublicPage, fetchImageData, sanitizeSvg, accentFromPng, accentFromHtml } from "./site.js";
 export { estimatePlannerCost, planWithModel } from "./llm.js";
+export { briefFromPrompt } from "./prompt.js";
 export { SAMPLE_BRIEF, SAMPLES } from "./sample.js";
 export { beats } from "./motion.js";
 export { buildShots } from "./scenes.js";

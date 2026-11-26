@@ -45,7 +45,8 @@ const nextConfig: NextConfig = {
   // The order flow is a box on every page now.
   async redirects() {
     return [
-      { source: "/order", destination: "/#order", permanent: false },
+      { source: "/order", destination: "/pro#order", permanent: false },
+      { source: "/studio", destination: "/", permanent: false },
       { source: "/results", destination: "/docs/pond-ai", permanent: true },
     ];
   },

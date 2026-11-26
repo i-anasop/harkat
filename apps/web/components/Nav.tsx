@@ -9,7 +9,7 @@ import s from "./Nav.module.css";
 const LINKS = [
   { href: "/work", label: "Work" },
   { href: "/process", label: "Process" },
-  { href: "/studio", label: "Studio" },
+  { href: "/", label: "Try a film" },
 ];
 
 export default function Nav({ current }: { current?: string }) {
