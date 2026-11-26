@@ -32,7 +32,7 @@ test("recorded directions compile into different 2D films", () => {
   for (const id of Object.keys(RECORDED)) {
     const made = compileDirection(brief(id), RECORDED[id], { seed: id });
     assert.equal(made.ok, true, `${id}: ${made.reason}`);
-    assert.equal(made.duration, 15);
+    assert.equal(made.duration, brief(id).length);
     assert.equal(made.layouts.at(-1), "end");
     assert.equal(new Set(made.layouts).size, made.layouts.length, made.layouts.join(","));
     assert.match(made.html, /data-director="1"/);
@@ -44,12 +44,15 @@ test("recorded directions compile into different 2D films", () => {
     films[id] = made;
   }
   const sequences = new Set(Object.values(films).map((film) => film.layouts.join(",")));
-  assert.equal(sequences.size, 4);
-  assert.match(films.keel.html, /data-layout="meter"/);
+  assert.equal(sequences.size, 5);
+  assert.match(films.keel.html, /data-layout="code"/);
   assert.match(films.keel.html, /data-count="98"/);
-  assert.match(films.north.html, /data-layout="flow"/);
-  assert.match(films.lumen.html, /data-layout="grid"/);
+  assert.match(films.keel.html, /data-kind="dashboard"/);
+  assert.match(films.north.html, /data-layout="wipe"/);
+  assert.match(films.lumen.html, /data-kind="sentence"/);
   assert.match(films.linear.html, /data-layout="search"/);
+  assert.match(films.harbor.html, /data-kind="chat"/);
+  assert.doesNotMatch(films.lumen.html, /class="tile word"/);
   const rules = compose(DIRECTOR_BRIEFS.keel);
   assert.notEqual(rules.html, films.keel.html);
 });
@@ -57,7 +60,7 @@ test("recorded directions compile into different 2D films", () => {
 test("every layout places without an overlap", () => {
   const src = brief();
   for (const layout of LAYOUTS) {
-    const copy = layout === "counter" ? "Up to 98%" : "Types the change";
+    const copy = layout === "metric" ? "Up to 98%" : "Types the change";
     const made = compileDirection(src, {
       treatment: "paper",
       rhythm: "tight",
@@ -165,7 +168,7 @@ test("the director prompt carries the brief and the hard rules", async () => {
   assert.match(system, /no 3D/);
   assert.equal(made.note, "mock");
   assert.equal(made.film.planSource, undefined);
-  assert.match(made.film.html, /data-layout="meter"/);
+  assert.match(made.film.html, /data-layout="code"/);
 });
 
 test("a bad JSON reply is repaired once", async () => {
@@ -278,6 +281,7 @@ test("three director steps keep the brief's words when the model answers", async
     steps: 3,
     timeout: 20000,
     cache: false,
+    critique: false,
     providers: provider(),
     fetchImpl: async (_url, init) => {
       const user = JSON.parse(init.body).messages.at(-1).content;
@@ -305,7 +309,7 @@ test("three director steps keep the brief's words when the model answers", async
       return reply({
         shots: [
           { layout: "meter", motion: "stagger", camera: "hold", enter: "cut", ground: "ink", sfx: "tick" },
-          { layout: "kinetic", motion: "letters", camera: "push", enter: "whip", ground: "paper", sfx: "whoosh" },
+          { layout: "logo", motion: "scale", camera: "push", enter: "whip", ground: "paper", sfx: "whoosh" },
           { layout: "split", motion: "letters", camera: "pan", enter: "mask", ground: "paper", sfx: "click" },
           { layout: "counter", motion: "count", camera: "hold", enter: "push", ground: "paper", sfx: "ui" },
           { layout: "end", motion: "rise", camera: "hold", enter: "scale", ground: "accent", sfx: "chime" },
@@ -315,7 +319,7 @@ test("three director steps keep the brief's words when the model answers", async
   });
   assert.equal(made.ok, true, made.reason);
   assert.deepEqual(tasks, ["concept", "beats", "shots"]);
-  assert.match(made.film.html, /data-layout="meter"/);
+  assert.match(made.film.html, /data-layout="metric"/);
   assert.match(made.film.html, /data-count="98"/);
   assert.match(made.film.html, /Keel/);
   assert.doesNotMatch(made.film.html, /customers|award/i);

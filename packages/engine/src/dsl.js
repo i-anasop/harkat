@@ -3,7 +3,11 @@ import { clipWords, countWords } from "./copy.js";
 import { corpusOf, hash, highlightOf, wordOk } from "./plan.js";
 
 /** Layouts the stage can draw. The model picks these. It does not write HTML. */
-export const LAYOUTS = ["kinetic", "stage", "split", "grid", "dashboard", "meter", "checklist", "counter", "flow", "lockup", "search", "ticker", "end"];
+export const LAYOUTS = [
+  "scatter", "swap", "stack", "sentence", "sweep",
+  "dashboard", "code", "chat", "notify", "kanban", "toggles", "search",
+  "orbit", "cycler", "metric", "compare", "logo", "wipe", "end",
+];
 export const MOTIONS = ["letters", "mask", "rise", "scale", "stagger", "count", "draw", "type"];
 export const CAMERAS = ["hold", "push", "pan"];
 export const ENTERS = ["cut", "whip", "mask", "push", "scale"];
@@ -12,58 +16,80 @@ export const SFX = ["whoosh", "tick", "ui", "click", "thud", "chime"];
 const ROLES = ["hook", "problem", "intro", "feature", "proof", "close"];
 
 const ALIAS = {
-  code: "split",
-  chart: "meter",
-  cards: "grid",
-  title: "kinetic",
+  kinetic: "scatter",
+  stage: "wipe",
+  split: "compare",
+  grid: "sentence",
+  meter: "metric",
+  checklist: "cycler",
+  counter: "metric",
+  flow: "orbit",
+  lockup: "logo",
+  ticker: "stack",
+  chart: "metric",
+  cards: "kanban",
+  title: "scatter",
   cta: "end",
-  type: "kinetic",
+  type: "code",
   window: "dashboard",
-  nodes: "flow",
-  logo: "lockup",
-  bars: "meter",
+  nodes: "orbit",
+  bars: "metric",
+  code: "code",
+  logo: "logo",
 };
 
 const DEFAULT_MOTION = {
-  kinetic: "letters",
-  stage: "scale",
-  split: "letters",
-  grid: "stagger",
+  scatter: "letters",
+  swap: "type",
+  stack: "stagger",
+  sentence: "letters",
+  sweep: "mask",
   dashboard: "stagger",
-  meter: "stagger",
-  checklist: "stagger",
-  counter: "count",
-  flow: "draw",
-  lockup: "mask",
+  code: "type",
+  chat: "type",
+  notify: "rise",
+  kanban: "stagger",
+  toggles: "stagger",
   search: "type",
-  ticker: "mask",
+  orbit: "draw",
+  cycler: "stagger",
+  metric: "count",
+  compare: "mask",
+  logo: "scale",
+  wipe: "scale",
   end: "rise",
 };
 
 const DEFAULT_SFX = {
-  kinetic: "tick",
-  stage: "whoosh",
-  split: "click",
-  grid: "tick",
+  scatter: "whoosh",
+  swap: "tick",
+  stack: "tick",
+  sentence: "tick",
+  sweep: "whoosh",
   dashboard: "click",
-  meter: "tick",
-  checklist: "ui",
-  counter: "ui",
-  flow: "whoosh",
-  lockup: "ui",
+  code: "ui",
+  chat: "ui",
+  notify: "thud",
+  kanban: "click",
+  toggles: "click",
   search: "ui",
-  ticker: "whoosh",
+  orbit: "whoosh",
+  cycler: "tick",
+  metric: "ui",
+  compare: "whoosh",
+  logo: "ui",
+  wipe: "whoosh",
   end: "chime",
 };
 
-/** Six different films. A seed picks one. Counter is skipped when the brief has no number. */
+/** A seed picks a different opening. Metric is skipped when the brief has no trailing number. */
 export const PROGRAMS = [
-  { id: "meters", treatment: "ink-open", rhythm: "tight", layouts: ["meter", "kinetic", "split", "dashboard", "counter", "end"] },
-  { id: "field", treatment: "field", rhythm: "tight", layouts: ["stage", "kinetic", "grid", "checklist", "ticker", "end"] },
-  { id: "search", treatment: "paper", rhythm: "measured", layouts: ["kinetic", "search", "split", "flow", "lockup", "end"] },
-  { id: "build", treatment: "paper", rhythm: "tight", layouts: ["kinetic", "checklist", "grid", "flow", "stage", "end"] },
-  { id: "ops", treatment: "ink-open", rhythm: "measured", layouts: ["kinetic", "dashboard", "meter", "flow", "lockup", "end"] },
-  { id: "quiet", treatment: "paper", rhythm: "measured", layouts: ["lockup", "search", "checklist", "kinetic", "end"] },
+  { id: "dev", treatment: "ink-open", rhythm: "tight", layouts: ["wipe", "scatter", "code", "search", "dashboard", "metric", "orbit", "end"] },
+  { id: "field", treatment: "field", rhythm: "tight", layouts: ["wipe", "scatter", "compare", "kanban", "sentence", "stack", "logo", "end"] },
+  { id: "assistant", treatment: "ink-open", rhythm: "tight", layouts: ["wipe", "chat", "search", "toggles", "notify", "cycler", "logo", "end"] },
+  { id: "design", treatment: "paper", rhythm: "tight", layouts: ["scatter", "sentence", "kanban", "stack", "orbit", "compare", "logo", "end"] },
+  { id: "saas", treatment: "paper", rhythm: "measured", layouts: ["sweep", "search", "cycler", "dashboard", "notify", "swap", "logo", "end"] },
+  { id: "quiet", treatment: "paper", rhythm: "measured", layouts: ["logo", "search", "toggles", "chat", "compare", "end"] },
 ];
 
 const GLUE = new Set(["introducing", "open", "sample", "for", "the", "a", "an", "to", "up", "and", "your", "limit", "reached", "on", "off"]);
@@ -134,7 +160,7 @@ export function hasCount(brief) {
 }
 
 export function pickProgram(brief, seed = "0") {
-  const pool = PROGRAMS.filter((program) => hasCount(brief) || !program.layouts.includes("counter"));
+  const pool = PROGRAMS.filter((program) => hasCount(brief) || !program.layouts.includes("metric"));
   const list = pool.length ? pool : PROGRAMS;
   return list[hash(`${seed}|${brief.name}|${brief.goal}|${brief.problem}`) % list.length];
 }
@@ -205,7 +231,7 @@ export function normalizeDirection(raw, brief, siteText = "", seed = "0") {
   if (!source) return { ok: false, reason: "The direction needs a shots list." };
 
   const cleaned = [];
-  for (let i = 0; i < source.length && cleaned.length < 10; i++) {
+  for (let i = 0; i < source.length && cleaned.length < 14; i++) {
     const shot = source[i] || {};
     const line = copyAllowed(shot.copy, brief, siteText);
     if (!line.ok) return { ok: false, reason: `Shot ${i + 1}: ${line.reason}` };
@@ -249,7 +275,7 @@ export function normalizeDirection(raw, brief, siteText = "", seed = "0") {
     if (!shot.layout || (i > 0 && shot.layout === cleaned[i - 1].layout)) {
       shot.layout = nextLayout(program.layouts, used, cleaned[i - 1]?.layout, i === last);
     }
-    if (shot.layout === "counter" && !/\d+(?:\.\d+)?%?$/.test(shot.copy)) shot.layout = i === last ? "end" : "kinetic";
+    if (shot.layout === "metric" && !/\d+(?:\.\d+)?%?$/.test(shot.copy)) shot.layout = i === last ? "end" : "sweep";
     if (!shot.rows.length && ["dashboard", "checklist", "meter", "search", "flow", "ticker", "grid", "split"].includes(shot.layout)) {
       shot.rows = defaultRows(brief);
     }
@@ -288,7 +314,7 @@ export function acceptBeats(raw, brief, siteText = "") {
   const list = Array.isArray(raw?.beats) ? raw.beats : Array.isArray(raw?.shots) ? raw.shots : null;
   if (!list) return { ok: false, reason: "Beats need a list." };
   const beats = [];
-  for (let i = 0; i < list.length && beats.length < 10; i++) {
+  for (let i = 0; i < list.length && beats.length < 14; i++) {
     const line = copyAllowed(list[i]?.copy, brief, siteText);
     if (!line.ok) return { ok: false, reason: `Beat ${i + 1}: ${line.reason}` };
     beats.push({

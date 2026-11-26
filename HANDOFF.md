@@ -193,11 +193,15 @@ Scene types: `problem | intro | benefit | proof | cta`. Vignettes: `limit | code
 
 The model does not write HTML, CSS, or JavaScript. It returns JSON. `stage.js` draws it. Visible words have to already be in the brief or the scraped page (plus a short glue list: introducing, open, sample, and articles). A number that is not in the brief is rejected. Halal still runs on the brief, and on the concept line even though that line is never shown.
 
-Layouts: `kinetic`, `stage`, `split`, `grid`, `dashboard`, `meter`, `checklist`, `counter`, `flow`, `lockup`, `search`, `ticker`, `end`.
+Layouts the model can call: `scatter`, `swap`, `stack`, `sentence`, `sweep`, `dashboard`, `code`, `chat`, `notify`, `kanban`, `toggles`, `search`, `orbit`, `cycler`, `metric`, `compare`, `logo`, `wipe`, `end`. Older names (`kinetic`, `grid`, `meter`, …) map onto these. A metric is used only when the line ends in a number from the brief.
 
-Motion is 2D only: letter reveals, masks, rises, scale-through, a push or a pan, a whip enter. No perspective, no rotateX/rotateY. A counter is used only when the line ends in a number from the brief (`Up to 98%`). The end card is the hostname on the brand colour. SFX only.
+Each layout is a full frame, not a small card in a void. Type is large. Product scenes are a dashboard, a code editor (first word in a second colour, line numbers, file list), a chat with a streaming reply, search results, a kanban, toggles, or a stack of notifications. `sentence` puts Lucide icons in the line (ISC, copyright notice in `icons.js`). `orbit` is those icons around the name. `stack` repeats the line. `swap` changes the last word. `compare` is a dark/light split. `logo` draws the real scraped logo, or the name, with particles that settle into a ring. Grounds alternate paper, ink, and the brand colour. Camera is push, pan, or hold, in the plane. Scale-through is a block that grows to fill the frame. No perspective, no rotateX/rotateY.
 
-`exemplars.js` holds four hand-authored films (Keel, Linear, North, Lumen). Tests compile them. They are also what `node packages/engine/src/reel.js` renders. A live model is not required for those.
+`frame: "portrait"` on the studio body (or `compileDirection` opts) draws 1080×1920. The default is 1920×1080. Local renders are 30fps.
+
+When the time budget has about 4.5s left after the shot list, a critique call may swap a layout. It cannot change the words. It is skipped when the budget is the default 9s one-call path.
+
+`exemplars.js` holds five hand-authored 30s films: Keel (dev tool), Linear, North (fintech), Lumen (design), Harbor (assistant). `node packages/engine/src/reel.js --mp4` renders them, plus a portrait Keel, and writes a contact sheet (one frame every 0.5s). A live model is not required for those.
 
 Cost is logged as `harkat director source=... in=... out=... usd=... note=...`. Free providers log `usd=0.000000`. A cache hit logs `source=cache` and does not spend a quota slot. The response field `planNote` is `gemini` (or whichever provider answered), `cache`, `no-key`, `quota`, or `off`. `planSource` stays `model` or `rules`, which is what the page already understands.
 
@@ -417,7 +421,7 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 
 ## Known gaps
 
-- **The director is in, and it is not agency-final.** With a key, two briefs no longer share one template sequence: a dev tool can open on a meter, a finance tool on a colour field, a design tool on a grid, with a product window, a checklist, a flow, a ticker, or a counter, then the hostname on the brand colour. Without a key, the old templates still run, on purpose. The pictures are still a layout system, not a frame-by-frame film. The reference sheets (Runinfra, Reason, Synteq, Holo, the people-search film, the Pinterest concept) have custom illustration and tighter timing than this stage can draw. A paid film is still finished by a person. Do not sell the raw preview as the delivered film.
+- **The director is closer, and it is not the reference sheets.** The stage can now fill a frame: big type, a dark editor, a dashboard with a chart, chat, search, notifications, an icon orbit, a dark/light split, a brand-colour end card. Without a key, the old templates still run. It is still a component system. Synteq and the other sheets have more layers, custom drawing, and timing that changes inside a beat. A paid film is still finished by a person. Do not sell the raw preview as the delivered film.
 - Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The `/pro` reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, and 414 found `scrollWidth === clientWidth` on `/`, `/pro`, `/work`, `/process`, `/docs`, and `/paid`, including after a film was generated.
 - Domain is not chosen. Brand-kit notes mention Cloudflare Pages; the site is actually set up for **Vercel**.
 - No bank/card checkout. Crypto only, and only when NOWPayments keys are present.
@@ -450,9 +454,11 @@ Three commits on `main`, in this order:
 
 ## What changed on 26 Nov 2026 (director)
 
-The rule planner is still the fallback. `/api/studio/film` now asks a director model, when a free key is set, for a concept, then beats, then a shot list. `stage.js` compiles that into the film. Words that are not in the brief are rejected. Overlap still fails the build. One bad JSON reply is repaired once. The same brief is cached; a `seed` (or the next UTC day) changes it. Eight films per IP per day and forty per instance, then the preview falls back to rules. No key, no charge.
+The rule planner is still the fallback. `/api/studio/film` asks a director model, when a free key is set, for a concept, then beats, then a shot list, then a short critique if time remains. `stage.js` compiles that into one of 19 full-frame scenes. Words that are not in the brief are rejected. A `seed` changes the cut. Eight films per IP per day and forty per instance, then the preview falls back to rules.
 
-Hand-authored stand-ins, so the stage can be judged without a key: Keel (meter, type, window, `98%`), Linear (search, checklist), North (colour field, dashboard, flow), Lumen (grid, ticker). Render them with `node packages/engine/src/reel.js` and `node packages/engine/src/reel.js --mp4`. They are not the old template look. They are also not the reference films. Honest gap: simple windows, no custom illustration, timing is a weighted shot list.
+The picture pass after that replaced the sparse cards. The kit is kinetic type (scatter, swap, stack, icons in the line, a highlight sweep), product UI (dashboard, code, chat, search, kanban, toggles, notifications), an icon orbit, a cycling list, a metric with a chart, a dark/light split, a logo reveal, and a colour end card. Lucide icons, ISC, with the notice in `icons.js`. Renders are 1920×1080 at 30fps, and `frame: "portrait"` is 1080×1920.
+
+Hand-authored 30s films for the five archetypes: Keel, Linear, North, Lumen, Harbor. `node packages/engine/src/reel.js --mp4` writes the mp4 and a 0.5s contact sheet. They are denser than the first director pass. They are not Synteq. Honest gap: the UI is a kit, not a traced product, and a beat holds one idea instead of several overlapping.
 
 ## Working agreement
 

@@ -1,4 +1,6 @@
-/** Hand-authored directions. These are the few-shot quality bar and the stand-in for a model when no key is set. */
+/** Hand-authored directions. One archetype each. These are the few-shot quality bar. */
+
+const feat = (brief) => brief;
 
 export const DIRECTOR_BRIEFS = {
   keel: {
@@ -9,8 +11,8 @@ export const DIRECTOR_BRIEFS = {
     accent: "#0E7C66",
     audience: "Developers",
     goal: "launch",
-    tone: "plain",
-    length: 15,
+    tone: "bold",
+    length: 30,
     proof: "Up to 98%",
     sample: true,
   },
@@ -23,7 +25,7 @@ export const DIRECTOR_BRIEFS = {
     audience: "Teams",
     goal: "feature",
     tone: "quiet",
-    length: 15,
+    length: 30,
     sample: true,
   },
   north: {
@@ -35,8 +37,7 @@ export const DIRECTOR_BRIEFS = {
     audience: "Finance teams",
     goal: "launch",
     tone: "bold",
-    length: 15,
-    proof: "Under 2 days",
+    length: 30,
     sample: true,
   },
   lumen: {
@@ -48,75 +49,137 @@ export const DIRECTOR_BRIEFS = {
     audience: "Designers",
     goal: "launch",
     tone: "bold",
-    length: 15,
+    length: 30,
+    sample: true,
+  },
+  harbor: {
+    name: "Harbor",
+    problem: "Replies sit unread all day.",
+    features: ["Drafts the reply", "Searches the inbox", "Flips the send"],
+    url: "https://harbor.example",
+    accent: "#3B2FE0",
+    audience: "Operators",
+    goal: "launch",
+    tone: "bold",
+    length: 30,
     sample: true,
   },
 };
 
-const row = (copy, highlight, layout, motion, camera, enter, ground, sfx, role, rows) => ({
+void feat;
+
+const shot = (role, layout, copy, highlight, ground, enter, camera, rows) => ({
   role,
   layout,
   copy,
   highlight,
-  motion,
+  motion: "",
   camera,
   enter,
   ground,
-  sfx,
-  weight: 2,
+  sfx: "",
+  weight: 1,
   rows,
 });
 
+const K = ["Types the change", "Finds the bug", "Shows the diff"];
+const N = ["Sends the invoice", "Tracks the cash", "Shows the ledger"];
+const L = ["Keeps the file", "Shows the grid", "Ships the page"];
+const H = ["Drafts the reply", "Searches the inbox", "Flips the send"];
+const LI = ["Finds the issue", "Flips the state"];
+
 export const RECORDED = {
   keel: {
-    concept: "A meter fills, the word stalls, then Keel opens the change.",
+    concept: "A dev tool: the review stalls, the editor types, the count lands.",
     treatment: "ink-open",
     rhythm: "tight",
     shots: [
-      row("Reviews stall", "stall", "meter", "stagger", "hold", "cut", "ink", "tick", "hook", ["Reviews stall", "Types the change", "Shows the diff"]),
-      row("Reviews stall", "stall", "kinetic", "letters", "push", "whip", "paper", "whoosh", "problem"),
-      row("Keel", "", "lockup", "mask", "hold", "mask", "paper", "ui", "intro"),
-      row("Types the change", "change", "split", "letters", "pan", "push", "paper", "click", "feature", ["Types the change", "Finds the bug", "Shows the diff"]),
-      row("Up to 98%", "98%", "counter", "count", "push", "scale", "paper", "ui", "proof"),
-      row("keel.example", "", "end", "rise", "hold", "cut", "accent", "chime", "close"),
+      shot("hook", "wipe", "Reviews stall", "stall", "ink", "cut", "push"),
+      shot("problem", "scatter", "Reviews stall", "stall", "paper", "whip", "hold"),
+      shot("intro", "logo", "Keel", "", "paper", "mask", "hold"),
+      shot("feature", "code", "Types the change", "change", "ink", "push", "pan", K),
+      shot("feature", "search", "Finds the bug", "bug", "paper", "mask", "hold", K),
+      shot("feature", "compare", "Shows the diff", "diff", "paper", "scale", "push", K),
+      shot("feature", "dashboard", "Types the change", "change", "paper", "cut", "pan", K),
+      shot("proof", "metric", "Up to 98%", "98%", "ink", "push", "push"),
+      shot("feature", "orbit", "Keel", "", "accent", "whip", "hold"),
+      shot("feature", "cycler", "Shows the diff", "diff", "paper", "mask", "pan", K),
+      shot("feature", "notify", "Finds the bug", "bug", "ink", "cut", "hold", K),
+      shot("close", "end", "keel.example", "", "accent", "scale", "hold"),
     ],
   },
   linear: {
-    concept: "A quiet search: the issue is found, the state flips, the name lands.",
+    concept: "A quiet issue tracker: search, a moving list, a toggle, then the name.",
     treatment: "paper",
     rhythm: "measured",
     shots: [
-      row("Issues sit", "sit", "kinetic", "letters", "push", "cut", "paper", "tick", "hook"),
-      row("Finds the issue", "issue", "search", "type", "hold", "mask", "paper", "ui", "feature", ["Finds the issue", "Flips the state"]),
-      row("Flips the state", "state", "checklist", "stagger", "pan", "push", "paper", "click", "feature", ["Finds the issue", "Flips the state"]),
-      row("Linear", "", "lockup", "mask", "hold", "whip", "paper", "whoosh", "intro"),
-      row("linear.app", "", "end", "rise", "hold", "scale", "accent", "chime", "close"),
+      shot("hook", "sweep", "Issues sit", "sit", "paper", "cut", "push"),
+      shot("feature", "search", "Finds the issue", "issue", "paper", "mask", "hold", LI),
+      shot("feature", "cycler", "Flips the state", "state", "ink", "whip", "pan", LI),
+      shot("feature", "toggles", "Flips the state", "state", "paper", "push", "hold", LI),
+      shot("feature", "kanban", "Finds the issue", "issue", "paper", "cut", "pan", LI),
+      shot("feature", "chat", "Issues sit", "sit", "paper", "mask", "hold", LI),
+      shot("problem", "compare", "Issues sit", "sit", "paper", "scale", "push"),
+      shot("intro", "logo", "Linear", "", "ink", "whip", "hold"),
+      shot("feature", "stack", "Finds the issue", "issue", "paper", "cut", "pan", LI),
+      shot("close", "end", "linear.app", "", "accent", "mask", "hold"),
     ],
   },
   north: {
-    concept: "Unpaid invoices, then a ledger you can follow, then the two days.",
+    concept: "Unpaid invoices on a colour field, then a ledger you can read.",
     treatment: "field",
     rhythm: "tight",
     shots: [
-      row("Invoices sit", "sit", "stage", "scale", "push", "cut", "accent", "whoosh", "hook"),
-      row("Unpaid for weeks", "Unpaid", "kinetic", "letters", "hold", "whip", "paper", "tick", "problem"),
-      row("Sends the invoice", "invoice", "dashboard", "stagger", "pan", "mask", "paper", "click", "feature", ["Sends the invoice", "Tracks the cash", "Shows the ledger"]),
-      row("Tracks the cash", "cash", "flow", "draw", "hold", "push", "paper", "whoosh", "feature", ["Sends the invoice", "Tracks the cash", "Shows the ledger"]),
-      row("Under 2 days", "2", "ticker", "letters", "push", "scale", "paper", "ui", "proof", ["Sends the invoice", "Tracks the cash", "Shows the ledger"]),
-      row("north.example", "", "end", "rise", "hold", "cut", "accent", "chime", "close"),
+      shot("hook", "wipe", "Invoices sit", "sit", "accent", "cut", "push"),
+      shot("problem", "scatter", "Unpaid for weeks", "Unpaid", "ink", "whip", "hold"),
+      shot("feature", "stack", "Tracks the cash", "cash", "paper", "mask", "pan", N),
+      shot("feature", "dashboard", "Sends the invoice", "invoice", "paper", "push", "hold", N),
+      shot("feature", "notify", "Shows the ledger", "ledger", "ink", "cut", "push", N),
+      shot("feature", "compare", "Sends the invoice", "invoice", "paper", "scale", "pan", N),
+      shot("feature", "kanban", "Tracks the cash", "cash", "paper", "whip", "hold", N),
+      shot("feature", "sentence", "Shows the ledger", "ledger", "paper", "mask", "push", N),
+      shot("feature", "swap", "Sends the invoice", "invoice", "ink", "cut", "hold", N),
+      shot("feature", "toggles", "Tracks the cash", "cash", "paper", "push", "pan", N),
+      shot("intro", "logo", "North", "", "paper", "scale", "hold"),
+      shot("close", "end", "north.example", "", "accent", "cut", "hold"),
     ],
   },
   lumen: {
-    concept: "Files scatter into a grid, then a ticker, then the page ships.",
+    concept: "Files scatter, icons sit in the line, cards carry the page.",
     treatment: "paper",
     rhythm: "tight",
     shots: [
-      row("Files scatter", "scatter", "kinetic", "letters", "push", "cut", "paper", "tick", "hook"),
-      row("Shows the grid", "grid", "grid", "stagger", "hold", "whip", "paper", "whoosh", "feature", ["Keeps the file", "Shows the grid", "Ships the page"]),
-      row("Keeps the file", "file", "ticker", "letters", "pan", "mask", "paper", "ui", "feature", ["Keeps the file", "Shows the grid", "Ships the page"]),
-      row("Ships the page", "page", "split", "letters", "hold", "push", "paper", "click", "feature", ["Keeps the file", "Shows the grid", "Ships the page"]),
-      row("Lumen", "", "lockup", "mask", "push", "scale", "paper", "ui", "intro"),
-      row("lumen.example", "", "end", "rise", "hold", "cut", "accent", "chime", "close"),
+      shot("hook", "scatter", "Files scatter", "scatter", "paper", "cut", "push"),
+      shot("feature", "sentence", "Shows the grid", "grid", "ink", "whip", "hold", L),
+      shot("feature", "kanban", "Keeps the file", "file", "paper", "mask", "pan", L),
+      shot("feature", "stack", "Ships the page", "page", "paper", "push", "hold", L),
+      shot("problem", "compare", "Files scatter", "scatter", "paper", "scale", "push", L),
+      shot("intro", "orbit", "Lumen", "", "accent", "cut", "hold"),
+      shot("feature", "sweep", "Keeps the file", "file", "paper", "whip", "pan", L),
+      shot("feature", "chat", "Ships the page", "page", "paper", "mask", "hold", L),
+      shot("feature", "notify", "Shows the grid", "grid", "ink", "push", "hold", L),
+      shot("feature", "logo", "Lumen", "", "paper", "scale", "push"),
+      shot("feature", "swap", "Keeps the file", "file", "paper", "cut", "pan", L),
+      shot("close", "end", "lumen.example", "", "accent", "mask", "hold"),
+    ],
+  },
+  harbor: {
+    concept: "An assistant: the reply streams, the inbox searches, the send flips.",
+    treatment: "ink-open",
+    rhythm: "tight",
+    shots: [
+      shot("hook", "wipe", "Replies sit", "sit", "accent", "cut", "push"),
+      shot("feature", "chat", "Drafts the reply", "reply", "paper", "whip", "hold", H),
+      shot("feature", "search", "Searches the inbox", "inbox", "paper", "mask", "pan", H),
+      shot("feature", "toggles", "Flips the send", "send", "ink", "push", "hold", H),
+      shot("feature", "notify", "Drafts the reply", "reply", "paper", "cut", "push", H),
+      shot("feature", "cycler", "Searches the inbox", "inbox", "paper", "scale", "pan", H),
+      shot("feature", "sentence", "Flips the send", "send", "ink", "whip", "hold", H),
+      shot("feature", "swap", "Drafts the reply", "reply", "paper", "mask", "push", H),
+      shot("intro", "orbit", "Harbor", "", "accent", "cut", "hold"),
+      shot("feature", "logo", "Harbor", "", "paper", "push", "hold"),
+      shot("problem", "stack", "Replies sit", "sit", "ink", "scale", "pan", H),
+      shot("close", "end", "harbor.example", "", "accent", "cut", "hold"),
     ],
   },
 };

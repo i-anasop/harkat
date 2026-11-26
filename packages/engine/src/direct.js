@@ -1,14 +1,18 @@
 import { corpusOf, hash } from "./plan.js";
 import { completeChat, configuredProviders } from "./providers.js";
+import { renderDirection } from "./stage.js";
 import {
   acceptBeats,
   acceptConcept,
   acceptMotions,
   beatsFromBrief,
+  canonicalLayout,
   extractJson,
+  LAYOUTS as LAYOUT_NAMES,
   normalizeDirection,
 } from "./dsl.js";
-import { renderDirection } from "./stage.js";
+
+const LAYOUTS = LAYOUT_NAMES.join(", ");
 
 const SYSTEM = [
   "You direct a 2D motion-graphics launch film. Reply with one JSON object and nothing else.",
@@ -16,8 +20,6 @@ const SYSTEM = [
   "Do not invent customers, awards, or numbers. Every visible word must already be in the brief.",
   "Never write HTML, CSS, or JavaScript.",
 ].join(" ");
-
-const LAYOUTS = "kinetic, stage, split, grid, dashboard, meter, checklist, counter, flow, lockup, search, ticker, end";
 
 const cache = new Map();
 const usage = { day: "", global: 0, ips: new Map() };
@@ -121,7 +123,8 @@ export function conceptPrompt(brief, opts) {
     "layouts: 5 to 8 names, no repeats, last is end. counter only if the brief has a number.",
     "ink-open starts on black. field starts on the brand colour. paper stays light until the end card.",
     "The seed must change the idea and the opening layout. Do not describe music, people, or 3D.",
-    "Reference shape: a kinetic word, a product window with a cursor, a grid or a checklist, a count only from the brief, then the hostname on the brand colour.",
+    "Open on wipe, scatter, or sweep. Then product UI (dashboard, code, chat, search, kanban, toggles, notify). Then type (stack, swap, sentence, cycler) or orbit. End on end.",
+    "Alternate ink and paper. A beat is about 2 to 3 seconds. Hook in the first shot. No blank grids. No tiny centered line as the whole frame.",
     `Seed: ${opts.seed}`,
     brandBlock(brief, opts),
   ].join("\n");
@@ -143,7 +146,7 @@ export function shotsPrompt(brief, opts, concept, beats) {
     "Task: shots",
     "Set the camera for each beat, in order. JSON: {\"shots\":[{\"layout\":\"" + LAYOUTS.split(", ").join("|") + "\",\"motion\":\"letters|mask|rise|scale|stagger|count|draw|type\",\"camera\":\"hold|push|pan\",\"enter\":\"cut|whip|mask|push|scale\",\"ground\":\"paper|ink|accent\",\"sfx\":\"whoosh|tick|ui|click|thud|chime\",\"weight\":1}]}",
     "Do not repeat a layout. Do not repeat an enter. Last layout is end, ground accent, sfx chime.",
-    "Match this rhythm: kinetic type, then a UI mock (split, dashboard, search, or checklist), then one graphic (grid, meter, flow, ticker, or counter), then the end card.",
+    "Rhythm: hook by 2 seconds, then a dense UI scene, then a type scene, then the hostname. Alternate ground ink and paper. Prefer wipe, scatter, code, chat, dashboard, search, kanban, notify, cycler, stack, swap, sentence, orbit, metric, compare, logo, end.",
     `Treatment: ${concept.treatment}. Seed: ${opts.seed}.`,
     JSON.stringify(beats.map((beat) => ({ role: beat.role, copy: beat.copy }))),
   ].join("\n");
@@ -153,12 +156,36 @@ export function filmPrompt(brief, opts) {
   return [
     "Task: film",
     "Return the whole film. JSON: {\"concept\":\"one sentence\",\"treatment\":\"paper|ink-open|field\",\"rhythm\":\"tight|measured\",\"shots\":[{\"role\":\"hook|intro|feature|proof|close\",\"layout\":\"" + LAYOUTS.split(", ").join("|") + "\",\"copy\":\"1 to 6 words from the brief\",\"highlight\":\"\",\"rows\":[],\"motion\":\"letters|mask|rise|scale|stagger|count|draw|type\",\"camera\":\"hold|push|pan\",\"enter\":\"cut|whip|mask|push|scale\",\"ground\":\"paper|ink|accent\",\"sfx\":\"whoosh|tick|ui|click|thud|chime\",\"weight\":2}]}",
-    `${brief.length}s film: 5 shots at 15s, 7 at 30s, 9 at 45s. No repeated layout. No repeated enter. Last shot layout end, copy the hostname, ground accent, sfx chime.`,
+    `${brief.length}s film: about one shot per 2.5 seconds (6 at 15s, 12 at 30s, 14 at 45s). No repeated layout. Last shot layout end, copy the hostname, ground accent, sfx chime.`,
+    "Fill every frame. Alternate ink and paper. First shot is wipe, scatter, or sweep. Include at least two product UI layouts (dashboard, code, chat, search, kanban, toggles, notify).",
+    "Dev tool: code then search. Fintech: wipe then dashboard. Assistant: chat then toggles. Design tool: sentence (icons in the line) then kanban. Do not repeat one sequence for every product.",
     "Words you may use: " + allowedWords(brief, opts.siteText || ""),
-    "The seed changes the opening. A dev tool can open on a meter. A finance tool can open on a colour field. A design tool can open on a grid. Do not use the same sequence for every product.",
     `Seed: ${opts.seed}`,
     brandBlock(brief, opts),
   ].join("\n");
+}
+
+export function critiquePrompt(direction) {
+  const shots = (direction.shots || []).map((shot, index) => ({ index, layout: shot.layout, role: shot.role, ground: shot.ground }));
+  return [
+    "Task: critique",
+    "Review this shot list. JSON only: {\"notes\":\"one sentence\",\"swaps\":[{\"index\":1,\"layout\":\"chat\"}]}",
+    "Change a layout only if two shots repeat, the first shot is not wipe or scatter or sweep, or a run of type scenes has no product UI.",
+    "Do not change copy. swaps may be empty. Last index must stay end.",
+    `Allowed layouts: ${LAYOUTS}.`,
+    JSON.stringify(shots),
+  ].join("\n");
+}
+
+function applySwaps(direction, swaps) {
+  const shots = direction.shots.map((shot) => ({ ...shot }));
+  for (const swap of swaps || []) {
+    const index = Number(swap?.index);
+    const layout = canonicalLayout(swap?.layout);
+    if (!layout || !shots[index] || index === shots.length - 1 || layout === "end") continue;
+    shots[index] = { ...shots[index], layout };
+  }
+  return { ...direction, shots };
 }
 
 function logLine(source, input, output, usd, note) {
@@ -206,8 +233,8 @@ async function ask(task, user, ctx) {
   if (timeoutMs < 700) throw new Error("time");
   const cap = Number(process.env.HARKAT_DIRECTOR_TOKEN_BUDGET || 4500);
   if (ctx.spent.in + ctx.spent.out > cap) throw new Error("budget");
-  const max = { concept: 320, beats: 520, shots: 700, film: 900 };
-  const temp = { concept: 0.7, beats: 0.3, shots: 0.5, film: 0.6 };
+  const max = { concept: 380, beats: 800, shots: 1000, film: 1200, critique: 320 };
+  const temp = { concept: 0.7, beats: 0.3, shots: 0.5, film: 0.6, critique: 0.2 };
   const messages = [
     { role: "system", content: SYSTEM },
     { role: "user", content: user },
@@ -251,7 +278,14 @@ async function pipeline(brief, opts, ctx) {
   } catch {
     motions = { ok: false };
   }
-  return zip(concept.value, beatList, motions.ok ? motions.value : null);
+  let direction = zip(concept.value, beatList, motions.ok ? motions.value : null);
+  if (opts.critique !== false && ctx.deadline - Date.now() > 4500) {
+    try {
+      const critique = await ask("critique", critiquePrompt(direction), ctx);
+      if (critique.ok) direction = applySwaps(direction, critique.value);
+    } catch { /* a critique miss still ships the shot list */ }
+  }
+  return direction;
 }
 
 export function estimateDirectorCost(env = process.env) {
@@ -315,6 +349,9 @@ export async function directFilm(brief, opts = {}) {
       if (task === "shots") {
         const got = acceptMotions(parsed);
         return got.ok ? { ok: true, value: got.motions } : got;
+      }
+      if (task === "critique") {
+        return { ok: true, value: Array.isArray(parsed.swaps) ? parsed.swaps : [] };
       }
       const got = normalizeDirection(parsed, brief, opts.siteText || "", seed);
       return got.ok ? { ok: true, value: got.direction } : got;

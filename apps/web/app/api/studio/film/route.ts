@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     personalize?: boolean;
     prompt?: string;
     seed?: string | number;
+    frame?: string;
   };
   try {
     body = await req.json();
@@ -112,6 +113,7 @@ export async function POST(req: Request) {
       timeout: Number(process.env.HARKAT_DIRECTOR_BUDGET_MS) || 9000,
       seed: body.seed,
       ip: clientIp(req),
+      frame: body.frame === "portrait" ? "portrait" : "landscape",
     },
   );
   } catch {
