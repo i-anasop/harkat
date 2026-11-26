@@ -30,4 +30,5 @@
 @media (max-width: 900px){
   .layout{grid-template-columns:1fr;gap:28px;padding-bottom:80px}
   .stageWrap{position:static}
+  .look,.lookOn,.primary,.ghost{min-height:44px}
 }

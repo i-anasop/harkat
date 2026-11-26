@@ -61,6 +61,7 @@ export default function Studio() {
   const [length, setLength] = useState<15 | 30 | 45>(30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [note, setNote] = useState("");
   const [film, setFilm] = useState<Film | null>(null);
   const [playing, setPlaying] = useState(false);
   const [at, setAt] = useState(0);
@@ -123,6 +124,7 @@ export default function Studio() {
   const preview = async () => {
     setBusy(true);
     setError("");
+    setNote("");
     stop();
     try {
       const res = await fetch("/api/studio/film", {
@@ -137,6 +139,7 @@ export default function Studio() {
         return;
       }
       if (data.accent && !accentSet) setAccent(data.accent);
+      setNote(typeof data.note === "string" ? data.note : "");
       setFilm({ html: data.html, duration: data.duration, events: data.events, goal: data.goal, length: data.length });
       setAt(0);
     } catch {
@@ -203,7 +206,8 @@ export default function Studio() {
         </label>
         <label className={s.field}><span>Product URL</span><input className={s.input} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="keel.example" inputMode="url" /></label>
         <label className={s.field}><span>Logo, optional</span><input className={s.file} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e) => onLogo(e.target.files?.[0])} /></label>
-        <p className={s.note}>The picture in the film is a sample interface, labelled as one. Sound is effects only. Harkat never adds music. The film you pay for is still finished by us.</p>
+        <p className={s.note}>The preview plays here in the browser. It is not a video file, and the server does not render one. Sound is effects only. Harkat never adds music. The film you pay for is still finished by us.</p>
+        {note && <p className={s.note}>{note}</p>}
         {error && <p className={s.err} role="alert">{error} {/doesn.t make films/.test(error) && <> <a href="/docs/halal">Why we decline some work</a></>}</p>}
         <div className={s.actions}>
           <button className={`btn ${s.primary}`} type="submit" disabled={busy}><span>{busy ? "Cutting…" : "Watch a preview"}</span><i /></button>

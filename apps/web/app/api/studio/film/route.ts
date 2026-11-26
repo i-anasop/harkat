@@ -45,9 +45,10 @@ export async function POST(req: Request) {
   let accent = body.accent;
   let logo = body.logo;
   let siteText = "";
+  let note = "";
   if (body.url && body.personalize !== false) {
     try {
-      const page = await fetchPublicPage(withProto(body.url));
+      const page = await fetchPublicPage(withProto(body.url), { timeout: 3000, maxBytes: 700_000 });
       const site = extractSite(page.html, page.url);
       siteText = `${site.name} ${site.tagline}`.trim();
       if (!name && site.name) name = site.name;
@@ -59,13 +60,17 @@ export async function POST(req: Request) {
         } catch { /* a missing logo should not block the preview */ }
       }
       if (!logo && site.logoSvg) logo = `data:image/svg+xml,${encodeURIComponent(site.logoSvg)}`;
-    } catch { /* keep the brief the person typed */ }
+    } catch {
+      note = "We couldn’t read that site from here, so this preview uses what you typed.";
+    }
   }
 
   const goals = ["launch", "feature", "explainer"] as const;
   const tones = ["quiet", "plain", "bold"] as const;
   const lengths = [15, 30, 45] as const;
-  const made = await composeWithModel(
+  let made;
+  try {
+    made = await composeWithModel(
     {
       name,
       problem,
@@ -80,8 +85,11 @@ export async function POST(req: Request) {
       tone: tones.find((item) => item === body.tone) ?? "plain",
       length: lengths.find((item) => item === Number(body.length)) ?? 30,
     },
-    { fontUrl: "/fonts/Geist-Variable.woff2", siteText },
+    { fontUrl: "/fonts/Geist-Variable.woff2", siteText, timeout: 4000 },
   );
+  } catch {
+    return NextResponse.json({ ok: false, reason: "The preview couldn’t be made just now. You can still order the film." }, { status: 500 });
+  }
   if (!made.ok) return NextResponse.json(made, { status: 422 });
   return NextResponse.json({
     ok: true,
@@ -93,5 +101,6 @@ export async function POST(req: Request) {
     accent: made.accent,
     planSource: made.planSource,
     planCost: made.planCost,
+    note,
   });
 }

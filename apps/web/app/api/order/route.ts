@@ -29,6 +29,10 @@ export async function POST(req: Request) {
   // Counted after the robot check, so failed attempts don’t use up a real visitor’s tries.
   if (!rateLimit(`order:${clientIp(req)}`, 5, 10 * 60_000)) return fail("Too many orders from this network. Please try again later.", 429);
 
+  if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return fail("This deploy isn’t storing orders yet. Email reach.harkat@gmail.com and we’ll take the brief.", 503);
+  }
+
   const errors = validate(data);
   if (Object.keys(errors).length) return NextResponse.json({ errors }, { status: 422 });
   const screened = screenText(

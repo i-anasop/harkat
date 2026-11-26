@@ -57,5 +57,6 @@ details[open] .plus{transform:rotate(45deg)}.plus{transition:transform .2s ease}
 }
 
 /* No visible page scrollbar (scrolling still works). */
+html,body{overflow-x:clip;max-width:100%}
 html{scrollbar-width:none}
 html::-webkit-scrollbar{display:none}

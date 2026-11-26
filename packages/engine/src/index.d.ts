@@ -52,7 +52,7 @@ export type SiteExtract = {
 };
 
 export function compose(input: BriefInput, opts?: { fontUrl?: string }): ComposeOk | ComposeNo;
-export function composeWithModel(input: BriefInput, opts?: { fontUrl?: string; siteText?: string }): Promise<ComposeOk | ComposeNo>;
+export function composeWithModel(input: BriefInput, opts?: { fontUrl?: string; siteText?: string; timeout?: number }): Promise<ComposeOk | ComposeNo>;
 export function screenText(text: string): { ok: true } | { ok: false; reason: string };
 export function extractSite(html: string, pageUrl: string): SiteExtract;
 export function fetchPublicPage(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<{ url: string; html: string }>;

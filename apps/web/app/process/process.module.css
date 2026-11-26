@@ -123,3 +123,11 @@
   .pList b{font-size:18px}
   .faqQ button{font-size:19px;padding:22px 0}
 }
+@media (max-width: 420px){
+  .build{width:100%}
+  .buildShot,.shipShot{width:100%;max-width:260px}
+  .player{width:100%;max-width:100%}
+  .code{width:min(168px, 62%);font-size:10px;white-space:normal}
+  .shot{width:30%}
+  .faqQ button{font-size:17px}
+}
