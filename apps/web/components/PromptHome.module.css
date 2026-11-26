@@ -30,8 +30,8 @@
 }
 .side.open{transform:none; box-shadow:24px 0 60px rgba(0,0,0,.18)}
 .scrim{position:fixed; inset:0; z-index:5; border:0; background:rgba(13,18,34,.36); cursor:pointer}
-.head{display:flex; align-items:center; justify-content:space-between; height:44px; padding:0 6px 0 8px; gap:8px}
-.brand{display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; letter-spacing:-0.03em; min-width:0}
+.head{display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 6px 0 10px; gap:8px}
+.brand{display:flex; align-items:center; gap:10px; font-weight:600; font-size:18px; letter-spacing:-0.04em; min-width:0}
 .logoBtn{display:none}
 .iconBtn,.drawerX,.menuBtn{
   width:40px; height:40px; border:0; border-radius:8px; background:transparent; color:var(--muted);
@@ -40,13 +40,13 @@
 .iconBtn:hover,.drawerX:hover,.menuBtn:hover,.logoBtn:hover{background:var(--hover); color:var(--ink)}
 .nav{display:flex; flex-direction:column; padding:0 4px}
 .link{
-  position:relative; display:flex; align-items:center; gap:10px; width:100%; min-height:40px; padding:0 10px;
-  border:0; border-radius:8px; background:transparent; color:var(--soft); font:inherit; font-size:14px; font-weight:500; cursor:pointer; text-align:left;
+  position:relative; display:flex; align-items:center; gap:10px; width:100%; min-height:34px; padding:0 10px;
+  border:0; border-radius:8px; background:transparent; color:var(--soft); font:inherit; font-size:14px; font-weight:450; cursor:pointer; text-align:left;
 }
 .link:hover,.linkOn{background:var(--hover); color:var(--ink)}
 .linkOn::before{content:""; position:absolute; left:0; width:3px; height:16px; border-radius:0 3px 3px 0; background:var(--accent)}
 .kbd{margin-left:auto; min-width:18px; height:18px; padding:0 5px; border-radius:5px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--line); font-family:var(--font-geist-mono),ui-monospace,monospace; font-size:11px; line-height:18px; color:var(--faint); font-weight:500}
-.search{display:flex; align-items:center; gap:8px; margin:6px 6px 2px; height:40px; padding:0 10px; border-radius:8px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--line); color:var(--faint)}
+.search{display:flex; align-items:center; gap:8px; margin:6px 6px 2px; height:34px; padding:0 10px; border-radius:8px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--line); color:var(--faint)}
 .search input{flex:1; min-width:0; border:0; background:transparent; font:inherit; font-size:16px; color:var(--ink); outline:none}
 .searchRail{display:none}
 .recents{flex:1; min-height:0; overflow:auto; margin-top:8px; padding:8px 4px 0; border-top:1px solid var(--line)}
@@ -55,8 +55,8 @@
 .rows{list-style:none; margin:0; padding:0 0 4px; display:flex; flex-direction:column; gap:1px}
 .row{position:relative; display:flex; align-items:center}
 .recent{
-  flex:1; min-width:0; display:flex; align-items:center; gap:8px; height:40px; padding:0 36px 0 10px;
-  border:0; border-radius:8px; background:transparent; color:var(--soft); font:inherit; font-size:13.5px; text-align:left; cursor:pointer;
+  flex:1; min-width:0; display:flex; align-items:center; gap:8px; height:32px; padding:0 32px 0 10px;
+  border:0; border-radius:8px; background:transparent; color:var(--soft); font:inherit; font-size:14px; font-weight:450; text-align:left; cursor:pointer;
 }
 .recent span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .recent:hover,.row:hover .recent{background:var(--hover); color:var(--ink)}
@@ -79,10 +79,16 @@
 .confirm p{flex:1 0 100%; margin:0 0 2px; font-size:13px; color:var(--ink)}
 .confirm button{flex:1; justify-content:center; border-radius:8px; background:var(--hover)}
 .rename{width:100%; height:40px; padding:0 10px; border:1px solid var(--accent); border-radius:8px; background:var(--surface); font:inherit; font-size:16px; color:var(--ink)}
-.foot{margin-top:auto; display:flex; flex-direction:column; gap:2px; padding-top:8px; border-top:1px solid var(--line)}
+.foot{margin-top:auto; display:flex; flex-direction:column; gap:4px; padding:8px 6px 4px; border-top:1px solid var(--line)}
+.hire{
+  display:flex; align-items:center; justify-content:center; min-height:36px; margin:0 4px 2px; padding:0 12px; border-radius:10px;
+  background:linear-gradient(100deg, #1F33B0 0%, #2E4BDB 48%, #6B86F2 100%); color:#fff; font-size:14px; font-weight:500;
+  text-decoration:none; box-shadow:0 8px 18px rgba(46,75,219,.22);
+}
+.hire:hover{filter:brightness(1.06)}
 .footLink{
-  display:flex; align-items:center; gap:10px; min-height:40px; padding:0 10px; border:0; border-radius:8px;
-  background:transparent; color:var(--soft); font:inherit; font-size:13.5px; text-align:left; cursor:pointer; text-decoration:none;
+  display:flex; align-items:center; gap:10px; min-height:34px; padding:0 10px; border:0; border-radius:8px;
+  background:transparent; color:var(--soft); font:inherit; font-size:14px; font-weight:450; text-align:left; cursor:pointer; text-decoration:none;
 }
 .footLink:hover{background:var(--hover); color:var(--ink)}
 
@@ -98,7 +104,7 @@
   flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; justify-content:center; gap:22px;
   width:min(680px, 100%); margin:0 auto; padding:12px max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
-.hello{margin:0; text-align:center; font-size:clamp(32px, 5vw, 44px); font-weight:500; letter-spacing:-0.045em; line-height:1.05}
+.hello{margin:0; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; text-align:center; font-size:clamp(32px, 5vw, 44px); font-weight:500; letter-spacing:-0.045em; line-height:1.05}
 .thread{
   flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:18px;
   width:min(720px, 100%); margin:0 auto; padding:8px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
@@ -145,9 +151,22 @@
 .urlChip img{width:16px; height:16px; border-radius:3px; flex-shrink:0}
 .swatch{width:10px; height:10px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.15); flex-shrink:0}
 .urlClear{width:28px; height:28px; border:0; border-radius:50%; background:transparent; color:var(--muted); font-size:18px; line-height:1; cursor:pointer}
-.seg{display:flex; padding:3px; border-radius:999px; background:var(--hover); flex-shrink:0}
-.seg button{min-width:40px; height:30px; padding:0 8px; border:0; border-radius:999px; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:500; cursor:pointer}
-.segOn{background:var(--surface) !important; color:var(--ink) !important; box-shadow:0 1px 2px rgba(13,18,34,.08)}
+.len{position:relative; flex-shrink:0}
+.clock{
+  width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:var(--muted);
+  display:grid; place-items:center; cursor:pointer;
+}
+.clock:hover,.clockOn{background:var(--hover); color:var(--ink)}
+.lenPop{
+  position:absolute; right:0; top:calc(100% + 8px); z-index:5; min-width:148px; padding:4px;
+  border-radius:12px; background:var(--surface); box-shadow:0 0 0 1px var(--line), 0 16px 40px rgba(0,0,0,.14);
+}
+.dock .lenPop{top:auto; bottom:calc(100% + 8px)}
+.lenPop button{
+  display:flex; align-items:center; width:100%; min-height:36px; padding:0 10px; border:0; border-radius:8px;
+  background:transparent; color:var(--soft); font:inherit; font-size:14px; text-align:left; cursor:pointer;
+}
+.lenPop button:hover,.lenOn{background:var(--hover); color:var(--ink)}
 .send{
   width:36px; height:36px; margin-left:auto; flex-shrink:0; border:0; border-radius:50%; background:var(--ink); color:var(--bg);
   display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
@@ -183,10 +202,22 @@
   .shell[data-collapsed="true"] .logoBtn,
   .shell[data-collapsed="true"] .searchRail{display:grid; place-items:center}
   .shell[data-collapsed="true"] .head{justify-content:center; padding:0}
+  .shell[data-collapsed="true"] .side{align-items:center; padding-left:0; padding-right:0}
+  .shell[data-collapsed="true"] .head,
+  .shell[data-collapsed="true"] .nav,
+  .shell[data-collapsed="true"] .foot{width:100%; align-items:center; padding-left:0; padding-right:0}
   .shell[data-collapsed="true"] .link,
   .shell[data-collapsed="true"] .footLink,
   .shell[data-collapsed="true"] .searchRail,
-  .shell[data-collapsed="true"] .logoBtn{width:40px; height:40px; padding:0; justify-content:center; margin:0 auto}
+  .shell[data-collapsed="true"] .logoBtn{
+    display:grid; place-items:center; width:36px; height:36px; min-height:36px; padding:0; margin:0; gap:0; justify-content:center;
+  }
+  .shell[data-collapsed="true"] .hire{display:grid; place-items:center; width:36px; height:36px; min-height:36px; margin:0; padding:0; border-radius:10px}
+  .shell[data-collapsed="true"] .hire span{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0)}
+  .shell[data-collapsed="true"] .link svg,
+  .shell[data-collapsed="true"] .footLink svg,
+  .shell[data-collapsed="true"] .searchRail svg,
+  .shell[data-collapsed="true"] .hire svg{display:block; margin:0}
   .shell[data-collapsed="true"] .linkOn::before{display:none}
   .shell[data-collapsed="true"] .nav,.shell[data-collapsed="true"] .foot{align-items:center}
   .logoBtn{position:relative; border:0; border-radius:8px; background:transparent; color:var(--ink); cursor:pointer}

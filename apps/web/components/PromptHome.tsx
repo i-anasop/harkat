@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Mark } from "./icons";
 import FilmStage, { type Cue, type FilmHandle } from "./FilmStage";
+import { dayAnchor, readHistory } from "@/lib/homeState.mjs";
 import s from "./PromptHome.module.css";
 
 const LENGTHS = [15, 30, 45] as const;
@@ -29,19 +30,6 @@ type Saved = {
 type Turn =
   | { id: string; role: "user"; text: string }
   | { id: string; role: "film"; prompt: string; html?: string; duration?: number; events?: Cue[]; note?: string; error?: string; pending?: boolean };
-
-function parseHistory(raw: string): Saved[] {
-  try {
-    const list = JSON.parse(raw);
-    if (!Array.isArray(list)) return [];
-    return list.filter((item) => item && typeof item.prompt === "string").slice(0, MAX).map((item) => ({
-      ...item,
-      title: typeof item.title === "string" && item.title.trim() ? item.title : String(item.prompt).slice(0, 60),
-    }));
-  } catch {
-    return [];
-  }
-}
 
 function subscribeHistory(onChange: () => void) {
   window.addEventListener("harkat-history", onChange);
@@ -72,7 +60,12 @@ function subscribeSide(onChange: () => void) {
     window.removeEventListener("storage", onChange);
   };
 }
-function sideShut() { return localStorage.getItem("harkat.sidebar") === "shut"; }
+function sideShut() {
+  try { return localStorage.getItem("harkat.sidebar") === "shut"; } catch { return false; }
+}
+function historySnapshot() {
+  try { return localStorage.getItem(KEY) ?? "[]"; } catch { return "[]"; }
+}
 function setSide(shut: boolean) {
   localStorage.setItem("harkat.sidebar", shut ? "shut" : "open");
   window.dispatchEvent(new Event("harkat-sidebar"));
@@ -87,7 +80,7 @@ function subscribeTheme(onChange: () => void) {
   };
 }
 function themeNow(): "light" | "dark" {
-  return localStorage.getItem("harkat.theme") === "dark" ? "dark" : "light";
+  try { return localStorage.getItem("harkat.theme") === "dark" ? "dark" : "light"; } catch { return "light"; }
 }
 function setTheme(theme: "light" | "dark") {
   localStorage.setItem("harkat.theme", theme);
@@ -124,14 +117,12 @@ function dayStart(t: number) {
 
 const GROUPS = ["Today", "Yesterday", "Previous 7 days", "Older"] as const;
 
-function subscribeNow() { return () => {}; }
-
-function grouped(items: Saved[], query: string, now: number) {
+function grouped(items: Saved[], query: string, anchor: number) {
   const q = query.trim().toLowerCase();
   const matched = items.filter((item) => !q || `${item.title} ${item.prompt}`.toLowerCase().includes(q));
   const pinned = matched.filter((item) => item.pinned).sort((a, b) => b.at - a.at);
   const rest = matched.filter((item) => !item.pinned);
-  const today = dayStart(now || Date.UTC(2026, 0, 1));
+  const today = anchor || Date.UTC(2026, 0, 1);
   const buckets: Record<(typeof GROUPS)[number], Saved[]> = { Today: [], Yesterday: [], "Previous 7 days": [], Older: [] };
   for (const item of rest) {
     const start = dayStart(item.at);
@@ -145,9 +136,8 @@ function grouped(items: Saved[], query: string, now: number) {
 }
 
 export default function PromptHome() {
-  const now = useSyncExternalStore(subscribeNow, () => Date.now(), () => 0);
-  const historyRaw = useSyncExternalStore(subscribeHistory, () => localStorage.getItem(KEY) ?? "[]", () => "[]");
-  const history = useMemo(() => parseHistory(historyRaw), [historyRaw]);
+  const historyRaw = useSyncExternalStore(subscribeHistory, historySnapshot, () => "[]");
+  const history = useMemo(() => readHistory(historyRaw) as Saved[], [historyRaw]);
   const collapsed = useSyncExternalStore(subscribeSide, sideShut, () => false);
   const theme = useSyncExternalStore(subscribeTheme, themeNow, () => "light" as const);
   const [prompt, setPrompt] = useState("");
@@ -278,14 +268,14 @@ export default function PromptHome() {
         at: Date.now(),
         html: data.html,
         duration: data.duration,
-        events: data.events,
+        events: Array.isArray(data.events) ? data.events : [],
         note: typeof data.note === "string" ? data.note : "",
       };
       setLast({ name: item.name, prompt: item.prompt, url: item.url });
       setActive(item.id);
       setPlayId(filmId);
       remember(item);
-      setTurns((prev) => prev.map((turn) => turn.id === filmId ? { id: filmId, role: "film", prompt: line, html: data.html, duration: data.duration, events: data.events, note: item.note } : turn));
+      setTurns((prev) => prev.map((turn) => turn.id === filmId ? { id: filmId, role: "film", prompt: line, html: data.html, duration: data.duration, events: item.events, note: item.note } : turn));
     } catch {
       setTurns((prev) => prev.map((turn) => turn.id === filmId ? { id: filmId, role: "film", prompt: line, error: "Network error. Please try again." } : turn));
     } finally {
@@ -297,7 +287,7 @@ export default function PromptHome() {
   const hire = () => handoff(last.name, last.prompt || prompt, last.url || url);
   const empty = turns.length === 0;
   const domain = domainOf(url);
-  const groups = grouped(history, query, now);
+  const groups = grouped(history, query, dayAnchor());
 
   const onSwipe = (e: React.PointerEvent) => {
     if (!drawer || !window.matchMedia("(max-width: 859px)").matches) return;
@@ -328,7 +318,7 @@ export default function PromptHome() {
             <span className={s.logoMark}><Mark size={20} /></span>
             <span className={s.logoSwap}><PanelIcon /></span>
           </button>
-          <span className={s.brand}><Mark size={18} /> harkat</span>
+          <span className={s.brand}><Mark size={26} /> harkat</span>
           <button type="button" className={s.iconBtn} onClick={() => setSide(true)} title="Collapse sidebar" aria-label="Collapse sidebar"><PanelIcon /></button>
           <button type="button" className={s.drawerX} onClick={() => setDrawer(false)} aria-label="Close menu"><CloseIcon /></button>
         </div>
@@ -377,8 +367,7 @@ export default function PromptHome() {
         </div>
 
         <div className={s.foot}>
-          <Link href="/pro" className={s.footLink} onClick={hire} title="Hire a pro"><HireIcon /><span>Hire a pro</span></Link>
-          <Link href="/docs" className={s.footLink} title="Docs"><DocsIcon /><span>Docs</span></Link>
+          <Link href="/pro" className={s.hire} onClick={hire} title="Hire a pro"><HireIcon /><span>Hire a pro</span></Link>
           <button type="button" className={s.footLink} title={theme === "dark" ? "Light theme" : "Dark theme"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
             <span>{theme === "dark" ? "Light" : "Dark"}</span>
@@ -396,7 +385,7 @@ export default function PromptHome() {
 
         {empty ? (
           <div className={`${s.intro} bare`}>
-            <h1 className={s.hello}>What are we making?</h1>
+            <h1 className={s.hello}><Mark size={34} /><span>What are we making?</span></h1>
             <Composer boxRef={boxRef} prompt={prompt} setPrompt={setPrompt} url={url} setUrl={setUrl} urlOpen={urlOpen} setUrlOpen={setUrlOpen} domain={domain} swatch={swatch} setSwatch={setSwatch} length={length} setLength={setLength} busy={busy} send={send} />
           </div>
         ) : (
@@ -483,6 +472,33 @@ function HistoryRow({ item, active, menu, onOpen, onMenu, onCloseMenu, onRename,
   );
 }
 
+function LengthPicker({ length, setLength }: { length: Length; setLength: (n: Length) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("pointerdown", onDown); window.removeEventListener("keydown", onKey); };
+  }, [open]);
+  return (
+    <div className={s.len} ref={ref}>
+      <button type="button" className={`${s.clock} ${open ? s.clockOn : ""}`} aria-expanded={open} aria-label={`Length, ${length} seconds`} title={`${length} seconds`} onClick={() => setOpen((v) => !v)}>
+        <ClockIcon />
+      </button>
+      {open && (
+        <div className={s.lenPop} role="listbox" aria-label="Length">
+          {LENGTHS.map((n) => (
+            <button key={n} type="button" role="option" aria-selected={n === length} className={n === length ? s.lenOn : ""} onClick={() => { setLength(n); setOpen(false); }}>{n} seconds</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Composer({ boxRef, prompt, setPrompt, url, setUrl, urlOpen, setUrlOpen, domain, swatch, setSwatch, length, setLength, busy, send }: {
   boxRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string; setPrompt: (v: string) => void;
@@ -524,11 +540,7 @@ function Composer({ boxRef, prompt, setPrompt, url, setUrl, urlOpen, setUrlOpen,
             <LinkIcon /> Website
           </button>
         )}
-        <div className={s.seg} role="radiogroup" aria-label="Length">
-          {LENGTHS.map((n) => (
-            <button key={n} type="button" role="radio" aria-checked={n === length} className={n === length ? s.segOn : ""} onClick={() => setLength(n)}>{n}s</button>
-          ))}
-        </div>
+        <LengthPicker length={length} setLength={setLength} />
         <button className={s.send} type="submit" disabled={busy || (prompt.trim().length < 8 && !url.trim())} aria-label="Make the film">
           {busy ? <span className={s.spin} /> : <ArrowUp />}
         </button>
@@ -564,8 +576,8 @@ function FilmBubble({ turn, autoPlay, onHire }: { turn: Extract<Turn, { role: "f
             {/doesn.t make films|gambling|adult|alcohol|drug/i.test(turn.error) && <> <Link href="/docs/halal">Why we decline some work</Link></>}
           </p>
         )}
-        {turn.html && turn.duration && turn.events && (
-          <FilmStage ref={stage} html={turn.html} duration={turn.duration} events={turn.events} autoPlay={autoPlay} />
+        {turn.html && typeof turn.duration === "number" && (
+          <FilmStage ref={stage} html={turn.html} duration={turn.duration} events={turn.events ?? []} autoPlay={autoPlay} />
         )}
         {turn.note && <p className={s.note}>{turn.note}</p>}
         {turn.html && (
@@ -586,7 +598,7 @@ function PanelIcon() {
   return <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2" width="13" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M6 2.5 V13.5" stroke="currentColor" strokeWidth="1.4" /></svg>;
 }
 function ComposeIcon() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11.5 V13.5 H4.5 L12 6 L10 4 Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M9 5 L11 7" stroke="currentColor" strokeWidth="1.4" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.1 3.2 L12.8 6.9 L6.4 13.3 H2.7 V9.6 Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M8 4.4 L11.6 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
 }
 function SearchIcon() {
   return <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M10.4 10.4 L13.5 13.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
@@ -600,8 +612,8 @@ function MoreIcon() {
 function HireIcon() {
   return <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M3.2 13.2c.6-2.2 2.4-3.4 4.8-3.4s4.2 1.2 4.8 3.4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
 }
-function DocsIcon() {
-  return <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5 H10 L13 5.5 V13.5 H4 Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M6 8 H11 M6 10.5 H11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>;
+function ClockIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.2" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M8 5.1 V8.1 L10 9.3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 function MoonIcon() {
   return <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.2 A6 6 0 1 0 13.8 10 4.6 4.6 0 0 1 10 2.2 Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>;

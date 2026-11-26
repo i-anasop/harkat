@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import HomeBoundary from "@/components/HomeBoundary";
 import PromptHome from "@/components/PromptHome";
 
 const TITLE = "Harkat — AI launch films for startups";
@@ -12,5 +13,9 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <PromptHome />;
+  return (
+    <HomeBoundary>
+      <PromptHome />
+    </HomeBoundary>
+  );
 }

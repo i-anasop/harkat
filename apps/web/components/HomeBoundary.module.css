@@ -1,0 +1,13 @@
+.wrap{
+  min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; padding:32px 20px; text-align:center; background:#F6F7F9; color:#0D1222;
+  font-family:var(--font-geist), 'Geist', system-ui, sans-serif;
+}
+.wrap h1{margin:0; font-size:28px; font-weight:500; letter-spacing:-0.04em}
+.wrap p{margin:0; max-width:420px; font-size:15px; line-height:1.5; color:#5B6275}
+.row{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:8px}
+.primary,.ghost{
+  min-height:44px; padding:0 16px; border:0; border-radius:10px; font:inherit; font-weight:500; cursor:pointer;
+}
+.primary{background:#0D1222; color:#fff}
+.ghost{background:#fff; color:#0D1222; box-shadow:inset 0 0 0 1px #E2E5EC}
