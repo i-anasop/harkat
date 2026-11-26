@@ -3,7 +3,7 @@ import Link from "next/link";
 import { DocHeader } from "./parts";
 import s from "./docs.module.css";
 
-export const metadata: Metadata = { title: "Docs" };
+export const metadata: Metadata = { title: "Overview", description: "How Harkat makes films, what we will not make, and the terms we work by." };
 
 const INDEX = [
   { group: "Harkat", rows: [

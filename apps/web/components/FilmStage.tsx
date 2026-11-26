@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import s from "./FilmStage.module.css";
 
 export type Cue = { t: number; sfx: string };
@@ -45,7 +45,9 @@ function schedule(ctx: AudioContext, cue: Cue, when: number) {
   else if (cue.sfx === "thud") tone(ctx, when, 95, 0.28, 0.12);
 }
 
-export default function FilmStage({ html, duration, events, autoPlay = false }: { html: string; duration: number; events: Cue[]; autoPlay?: boolean }) {
+export type FilmHandle = { replay: () => void };
+
+const FilmStage = forwardRef<FilmHandle, { html: string; duration: number; events: Cue[]; autoPlay?: boolean }>(function FilmStage({ html, duration, events, autoPlay = false }, ref) {
   const id = useId();
   const stageRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -67,7 +69,7 @@ export default function FilmStage({ html, duration, events, autoPlay = false }: 
     setAt(t);
   };
 
-  const play = (from = 0) => {
+  const play = useCallback((from = 0) => {
     window.dispatchEvent(new CustomEvent("harkat-play", { detail: id }));
     cancelAnimationFrame(playRef.current);
     audioRef.current?.close().catch(() => {});
@@ -91,7 +93,9 @@ export default function FilmStage({ html, duration, events, autoPlay = false }: 
       playRef.current = requestAnimationFrame(tick);
     };
     playRef.current = requestAnimationFrame(tick);
-  };
+  }, [duration, events, id]);
+
+  useImperativeHandle(ref, () => ({ replay: () => play(0) }), [play]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -137,4 +141,6 @@ export default function FilmStage({ html, duration, events, autoPlay = false }: 
       <input className={s.scrub} type="range" min={0} max={duration} step={0.05} value={Math.min(at, duration)} aria-label="Film time" onChange={(e) => { stop(); seek(Number(e.target.value)); }} />
     </div>
   );
-}
+});
+
+export default FilmStage;

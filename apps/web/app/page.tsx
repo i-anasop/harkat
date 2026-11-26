@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import PromptHome from "@/components/PromptHome";
 
+const TITLE = "Harkat — AI launch films for startups";
+const DESCRIPTION = "Describe a product. Harkat cuts a sample 2D launch film in the browser — sound effects only, never music. A person finishes the film you hire.";
+
 export const metadata: Metadata = {
-  title: "Make a launch film",
-  description: "Describe your product. Harkat cuts a sample film in the browser — sound effects only, no music.",
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/" },
+  twitter: { title: TITLE, description: DESCRIPTION },
 };
 
 export default function Home() {

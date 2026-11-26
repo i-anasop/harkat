@@ -12,7 +12,8 @@ import s from "./pro.module.css";
 
 export const metadata: Metadata = {
   title: "Hire a pro",
-  description: "Agency-quality product films with your real UI and crafted sound — delivered in days, not months.",
+  description: "Agency-quality 2D launch films for AI and SaaS startups, made by a person. Spark $30, Launch $50, Studio $100.",
+  openGraph: { title: "Harkat — Hire a pro", description: "Agency-quality 2D launch films, delivered in days. Sound effects only." },
 };
 
 export default function Pro() {

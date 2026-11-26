@@ -4,7 +4,10 @@ import Footer from "@/components/Footer";
 import CtaPanel from "@/components/CtaPanel";
 import WorkGrid from "./WorkGrid";
 
-export const metadata: Metadata = { title: "Work" };
+export const metadata: Metadata = {
+  title: "Selected films",
+  description: "Launch films Harkat has shipped — real products, sound effects only, no music.",
+};
 
 export default function Work() {
   return (

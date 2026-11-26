@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 26 Nov 2026, after the mobile pass and the prompt home. Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 26 Nov 2026, after the prompt-home polish (sidebar, metadata, composer). Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -338,7 +338,7 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 
 ## Known gaps
 
-- Generated films are still templates: a title on a brand field, a dashboard, a card, a ring, a chart. They are not agency-quality launch films. Do not sell the raw Studio output as the delivered film.
+- **The films all look the same.** A different sentence still lands on the same templates: a title on a brand field, a dashboard, a card, a ring, a chart. Momin called this out on 26 Nov 2026. Do not patch it with another small layout pass. The next big piece of work is a major engine upgrade toward the style of the best motion-graphics launch videos on X. Until that ships, a paid film is still finished by a person. Do not sell the raw preview as the delivered film.
 - Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The `/pro` reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, and 414 found `scrollWidth === clientWidth` on `/`, `/pro`, `/work`, `/process`, `/docs`, and `/paid`, including after a film was generated.
 - Domain is not chosen. Brand-kit notes mention Cloudflare Pages; the site is actually set up for **Vercel**.
 - No bank/card checkout. Crypto only, and only when NOWPayments keys are present.
@@ -365,7 +365,8 @@ Three commits on `main`, in this order:
 
 1. **`HANDOFF.md`.** This file.
 2. **Phone layout.** Removed `overflow-x` from `html`, `body`, and `.page` (that was what made scrolling feel dead). Stacked the marketing reel under 860px, swapped `100vh` for `100dvh`, stopped using `100vw`, raised tap targets to 44px, set form text to 16px, and added a real menu under 720px. Decorative loops and the grain filter stay off on small screens so a finger-drag is not fighting them.
-3. **The prompt is the home page.** Layout ideas came from the old MotionGPT chat in `ana-momin/Startup` (`Startup 001/apps/studio`): a centred box, a thread under it, a history sidebar. Colours are Harkat’s, not MotionGPT’s. `/pro` is the previous landing, with the same work, prices, and order flow. `/studio` redirects to `/`.
+3. **The prompt is the home page.** Layout ideas came from the old MotionGPT chat in `ana-momin/Startup` (`Startup 001/apps/studio`): a centred box, a thread under it, a history sidebar. Colours are Harkat’s, not MotionGPT’s. `/pro` is the previous landing, with the same work, prices, and order flow. `/studio` redirects home.
+4. **Prompt-home polish (same day).** The tab title is `Harkat — AI launch films for startups`. The sidebar collapses to an icon rail (`harkat.sidebar`). History is grouped (Pinned, Today, Yesterday, Previous 7 days, Older) with rename, pin, and a confirmed delete. Search filters it. A website is a chip inside the box (`/api/brand` for the colour, `/api/favicon` for the mark). Length is a 15/30/45 pill. Suggestion chips are gone. Scrollbars on this page are thin and only show on hover. MotionGPT’s light/dark switch is here as `harkat.theme` on the prompt page only; `/pro` stays light. The pictures were not changed.
 
 ## Working agreement
 

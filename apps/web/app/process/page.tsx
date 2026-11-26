@@ -7,7 +7,10 @@ import Faq from "./Faq";
 import LazyLoop from "@/components/LazyLoop";
 import s from "./process.module.css";
 
-export const metadata: Metadata = { title: "Process" };
+export const metadata: Metadata = {
+  title: "How a film gets made",
+  description: "From a reference to a finished launch film. Sound effects only, halal by design.",
+};
 
 const STEPS: Step[] = [
   {
