@@ -1,5 +1,5 @@
-.wrap{position:relative;min-height:calc(100vh - 110px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:40px 0 120px}
-.glow{position:absolute;left:50%;top:42%;width:720px;height:420px;transform:translate(-50%,-50%);background:radial-gradient(closest-side, rgba(127,150,244,0.32), rgba(184,198,251,0.14) 55%, rgba(246,247,249,0));pointer-events:none;z-index:0}
+.wrap{position:relative;min-height:calc(100dvh - 110px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:40px 0 120px;overflow:hidden}
+.glow{position:absolute;left:50%;top:42%;width:min(720px, 100%);height:420px;transform:translate(-50%,-50%);background:radial-gradient(closest-side, rgba(127,150,244,0.32), rgba(184,198,251,0.14) 55%, rgba(246,247,249,0));pointer-events:none;z-index:0}
 .wrap > :not(.glow){position:relative}
 .mark{width:76px;height:76px;border-radius:20px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #E2E5EC, 0 18px 40px rgba(46,75,219,0.12);margin-bottom:6px}
 .code{font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#2E4BDB;background:#EEF2FF;border-radius:999px;padding:5px 12px}
@@ -9,8 +9,8 @@
 .link{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500}
 
 @media (max-width: 720px){
-  .wrap{min-height:calc(100vh - 140px);gap:18px;padding:32px 0 80px}
-  .glow{width:420px;height:320px}
-  .h1{font-size:clamp(52px, 15vw, 96px)}
+  .wrap{min-height:calc(100dvh - 140px);gap:18px;padding:32px 0 80px}
+  .glow{height:280px}
+  .h1{font-size:clamp(36px, 11vw, 56px)}
   .p{font-size:16px}
 }

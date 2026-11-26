@@ -24,7 +24,12 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", site: "@harkatai", images: ["/assets/harkat-hero-poster.jpg"] },
 };
 
-export const viewport: Viewport = { themeColor: "#F6F7F9" };
+export const viewport: Viewport = {
+  themeColor: "#F6F7F9",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

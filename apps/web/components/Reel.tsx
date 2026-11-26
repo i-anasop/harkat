@@ -19,9 +19,11 @@ export default function Reel() {
   useEffect(() => {
     const el = ref.current!;
     let target = 0, cur = 0, raf = 0;
+    const phone = matchMedia("(max-width: 860px)");
     const ease = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 0.09; // reduced motion: follow scroll exactly
 
     const measure = () => {
+      if (phone.matches) { target = 0; return; }
       const r = el.getBoundingClientRect();
       const range = r.height - innerHeight; // sticky "contain" range
       target = range > 0 ? Math.min(1, Math.max(0, -r.top / range)) : 0;
@@ -35,6 +37,7 @@ export default function Reel() {
     const kick = () => { measure(); if (!raf) raf = requestAnimationFrame(tick); };
 
     const io = new IntersectionObserver(([e]) => {
+      if (phone.matches) return;
       if (e.isIntersecting) { addEventListener("scroll", kick, { passive: true }); measure(); cur = target; kick(); }
       else removeEventListener("scroll", kick);
     });
@@ -53,6 +56,31 @@ export default function Reel() {
 
   return (
     <section ref={ref} className={s.reel} id="films" aria-label="Selected films">
+      <div className={s.stack}>
+        {REEL_FILMS.map((f) => (
+          <article key={f.slug} className={s.block}>
+            <div className={s.mFrame}>
+              {SHOW_POND_WORK ? (
+                <video className={s.video} src={filmLoop(f.slug)} poster={filmPoster(f.slug)} muted loop playsInline preload="none" aria-label={f.title} />
+              ) : (
+                <FilmPreview slug={f.slug} />
+              )}
+            </div>
+            <div className={s.mCopy}>
+              <span className={s.kindRow}>
+                <span className={s.kind}>{f.kind}</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/pond-ai-logo.png" alt="Pond AI" className={s.client} />
+              </span>
+              <h3 className={s.title}>{f.short}</h3>
+              <p className={s.about}>{f.about}</p>
+              {f.credit && (
+                <a className={s.credit} href={f.credit.url} target="_blank" rel="noopener noreferrer">Idea credit: {f.credit.label}</a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
       <div className={s.reelin}>
         <Grain id="greel" />
         <div className={s.stage}>

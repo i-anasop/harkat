@@ -1,4 +1,4 @@
-.page{min-height:100vh;padding:24px 0 96px;display:flex;flex-direction:column;gap:28px}
+.page{min-height:100dvh;padding:24px 0 96px;display:flex;flex-direction:column;gap:28px}
 .bar{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;border-bottom:1px solid #E2E5EC}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:500;letter-spacing:-0.05em}
 .tag{font-family:var(--font-geist-mono),monospace;font-size:11px;letter-spacing:0;color:#2E4BDB;background:#EEF2FF;border-radius:6px;padding:3px 7px}
@@ -17,7 +17,7 @@
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .search{flex:1 1 280px;display:flex;align-items:center;gap:10px;background:#FFFFFF;border-radius:11px;padding:0 14px;box-shadow:0 0 0 1px #E2E5EC;color:#8A90A0;transition:box-shadow .2s}
 .search:focus-within{box-shadow:0 0 0 1px #2E4BDB, 0 0 0 4px #EEF2FF;color:#2E4BDB}
-.search input{flex:1;border:0;outline:none;background:none;font:inherit;font-size:14px;color:#0D1222;padding:12px 0}
+.search input{flex:1;border:0;outline:none;background:none;font:inherit;font-size:16px;color:#0D1222;padding:12px 0;min-height:44px}
 .seg{display:flex;gap:2px;background:#ECEEF3;border-radius:11px;padding:3px}
 .seg button{font:inherit;font-size:13px;font-weight:500;color:#5B6275;background:none;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;transition:background .2s, color .2s}
 .seg button:hover{color:#0D1222}
@@ -66,8 +66,8 @@
 .payLink a{color:#1F33B0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .payErr{flex-basis:100%;font-size:12.5px;color:#C2410C}
 .ghost:disabled{opacity:.5;cursor:not-allowed}
-.primary{font-size:13px;font-weight:500;color:#FFFFFF;background:#0D1222;border-radius:9px;padding:9px 14px}
-.ghost{font:inherit;font-size:13px;font-weight:500;border:0;border-radius:9px;padding:9px 14px;background:#FFFFFF;color:#3C4253;box-shadow:0 0 0 1px #E2E5EC;cursor:pointer}
+.primary{font-size:14px;font-weight:500;color:#FFFFFF;background:#0D1222;border-radius:9px;padding:12px 16px;min-height:44px}
+.ghost{font:inherit;font-size:14px;font-weight:500;border:0;border-radius:9px;padding:12px 16px;min-height:44px;background:#FFFFFF;color:#3C4253;box-shadow:0 0 0 1px #E2E5EC;cursor:pointer}
 .ghost:hover{color:#0D1222}
 
 .empty{display:flex;flex-direction:column;align-items:center;gap:6px;background:#FFFFFF;border-radius:20px;box-shadow:0 0 0 1px #E2E5EC;padding:56px 24px;text-align:center;color:#6B7183;font-size:14px}

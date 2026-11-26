@@ -7,10 +7,14 @@
 .social a{color:#3C4253}
 .mark{display:flex;align-items:center;gap:22px}
 .word{font-size:168px;font-weight:500;letter-spacing:-0.075em;line-height:0.85}
+.left a,.social a{min-height:44px;display:inline-flex;align-items:center}
 
 @media (max-width: 720px){
-  .footer{gap:36px;padding:32px 0 40px}
-  .mark{gap:12px}
-  .svg{width:clamp(48px, 15vw, 120px);height:clamp(48px, 15vw, 120px)}
-  .word{font-size:clamp(64px, 21vw, 168px)}
+  .footer{gap:28px;padding:28px 0 max(28px, env(safe-area-inset-bottom))}
+  .top{gap:8px 16px}
+  .left{gap:4px 16px}
+  .social{gap:16px}
+  .mark{gap:10px;max-width:100%}
+  .svg{width:clamp(40px, 12vw, 72px);height:clamp(40px, 12vw, 72px)}
+  .word{font-size:clamp(44px, 16vw, 96px);letter-spacing:-0.06em}
 }

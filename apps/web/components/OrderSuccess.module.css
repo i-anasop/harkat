@@ -1,5 +1,5 @@
 /* Base styles are the final state, so reduced-motion users see the finished screen. */
-.sheet{position:fixed;inset:0;z-index:3;background:#F6F7F9;display:flex;align-items:center;justify-content:center;overflow:auto;animation:fade .4s ease both}
+.sheet{position:fixed;inset:0;z-index:3;height:100dvh;max-height:100dvh;background:#F6F7F9;display:flex;align-items:center;justify-content:center;overflow:auto;animation:fade .4s ease both}
 .sheet::before{content:"";position:absolute;inset:0;background:radial-gradient(45% 45% at 50% 35%, rgba(184,198,251,0.5), rgba(184,198,251,0));pointer-events:none}
 .inner{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:40px 24px;max-width:520px}
 

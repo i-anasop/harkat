@@ -16,9 +16,9 @@
 .mini *{animation:none !important;opacity:1 !important}
 
 @media (max-width: 720px){
-  .section{padding:0 0 72px}
-  .panel{border-radius:22px;padding:80px 20px 0;gap:28px}
-  .h2{font-size:clamp(44px, 12.5vw, 84px)}
+  .section{padding:0 0 56px}
+  .panel{border-radius:20px;padding:56px 16px 0;gap:22px}
+  .h2{font-size:clamp(32px, 9.5vw, 48px);letter-spacing:-0.05em}
   .stripWrap{width:calc(100% + 40px);margin:24px -20px 0;padding:0 0 24px;gap:10px}
   .stripWrap .strip{gap:10px}
   .tile{width:176px;padding:5px;border-radius:13px}

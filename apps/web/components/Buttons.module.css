@@ -2,16 +2,16 @@
 .primary .key{background:linear-gradient(90deg, #0D1222 0%, #1F33B0 50%, #4F6CEB 100%)}
 .key{display:flex;align-items:center;justify-content:center}
 
-.sm{border-radius:9px;box-shadow:0 1px 2px rgba(13,18,34,0.3)}
-.sm .label{padding:10px 14px 10px 16px;font-weight:500;font-size:14px}
-.sm .key{width:40px}
+.sm{border-radius:9px;box-shadow:0 1px 2px rgba(13,18,34,0.3);min-height:44px}
+.sm .label{padding:10px 14px 10px 16px;font-weight:500;font-size:14px;display:flex;align-items:center}
+.sm .key{width:44px}
 
 .lg{border-radius:10px;box-shadow:0 1px 2px rgba(13,18,34,0.3), 0 10px 24px rgba(13,18,34,0.14)}
 .lg .label,.light .label{padding:14px 20px 14px 22px;font-weight:500;font-size:16px;letter-spacing:-0.01em}
 .lg .key,.light .key{width:54px}
 
 .secWrap{display:inline-flex;flex-direction:column;align-items:center;gap:10px}
-.secondary{display:inline-flex;align-items:center;gap:10px;background:#FFFFFF;color:#0D1222;border-radius:10px;padding:14px 20px;font-weight:500;font-size:16px;letter-spacing:-0.01em;box-shadow:0 0 0 1px #E2E5EC, 0 1px 2px rgba(13,18,34,0.05)}
+.secondary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;background:#FFFFFF;color:#0D1222;border-radius:10px;padding:14px 20px;font-weight:500;font-size:16px;letter-spacing:-0.01em;box-shadow:0 0 0 1px #E2E5EC, 0 1px 2px rgba(13,18,34,0.05)}
 .caption{font-size:13px;color:#6B7183}
 
 .light{display:inline-flex;align-items:stretch;border-radius:10px;overflow:hidden;background:#FFFFFF;color:#0D1222;box-shadow:0 10px 30px rgba(11,19,64,0.25)}

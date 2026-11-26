@@ -1,11 +1,11 @@
 /* Single-screen order: the essentials on the left, a live order card on the right */
-.flow{position:fixed;inset:0;z-index:2;overflow:auto;background:#F6F7F9;color:#0D1222;animation:enter .45s cubic-bezier(.2,.7,.2,1) both}
+.flow{position:fixed;inset:0;z-index:2;height:100dvh;max-height:100dvh;overflow:auto;background:#F6F7F9;color:#0D1222;animation:enter .45s cubic-bezier(.2,.7,.2,1) both;-webkit-overflow-scrolling:touch}
 @keyframes enter{from{opacity:0}to{opacity:1}}
 .glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(40% 40% at 85% 0%, rgba(184,198,251,0.45) 0%, rgba(184,198,251,0) 70%)}
 
 .top{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:rgba(246,247,249,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:500;letter-spacing:-0.05em}
-.close{width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:#5B6275;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s, color .2s}
+.close{width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#5B6275;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s, color .2s}
 .close:hover{background:#FFFFFF;color:#0D1222}
 
 .layout{position:relative;width:min(1160px, calc(100% - 64px));margin:0 auto;padding:24px 0 80px;display:grid;grid-template-columns:minmax(0, 1fr) 460px;gap:60px;align-items:start}
@@ -20,7 +20,7 @@
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 .field{display:flex;flex-direction:column;gap:8px;min-width:0}
 .label{font-size:13px;color:#5B6275}
-.input{width:100%;box-sizing:border-box;border:0;border-radius:12px;background:#FFFFFF;box-shadow:0 0 0 1px #E2E5EC;padding:14px 15px;font:inherit;font-size:15px;color:#0D1222;outline:none;transition:box-shadow .2s}
+.input{width:100%;box-sizing:border-box;border:0;border-radius:12px;background:#FFFFFF;box-shadow:0 0 0 1px #E2E5EC;padding:14px 15px;font:inherit;font-size:16px;color:#0D1222;outline:none;transition:box-shadow .2s}
 .input::placeholder{color:#A3A9B8}
 .input:hover{box-shadow:0 0 0 1px #C9D0DE}
 .input:focus{box-shadow:0 0 0 1.5px #2E4BDB, 0 0 0 5px #EEF2FF}
@@ -140,10 +140,10 @@
 .total small{font-size:12.5px;color:rgba(255,255,255,0.55)}
 .price{font-size:38px;font-weight:500;letter-spacing:-0.05em;animation:bump .45s cubic-bezier(.3,1.4,.5,1) both}
 @keyframes bump{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.terms{position:relative;display:flex;align-items:center;gap:11px;font-size:13px;line-height:1.45;color:rgba(255,255,255,0.82);cursor:pointer}
+.terms{position:relative;display:flex;align-items:center;gap:11px;min-height:44px;font-size:13px;line-height:1.45;color:rgba(255,255,255,0.82);cursor:pointer}
 .terms input{position:absolute;opacity:0;width:1px;height:1px}
 .terms input:focus-visible + .box{box-shadow:0 0 0 2px #131E4E, 0 0 0 4px #8EA2FF}
-.box{width:18px;height:18px;flex-shrink:0;border-radius:5px;background:rgba(255,255,255,0.08);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;transition:background .2s, box-shadow .2s}
+.box{width:22px;height:22px;flex-shrink:0;border-radius:6px;background:rgba(255,255,255,0.08);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;transition:background .2s, box-shadow .2s}
 .box svg{opacity:0;transform:scale(.6);transition:opacity .2s, transform .25s cubic-bezier(.3,1.5,.5,1)}
 .termsOn .box{background:#4F6CEB;box-shadow:inset 0 0 0 1.5px #7D93F5}
 .termsOn .box svg{opacity:1;transform:none}
@@ -161,8 +161,8 @@
   .card{position:static}
 }
 @media (max-width: 640px){
-  .top{padding:14px 16px}
-  .h1{font-size:34px;margin-bottom:18px}
+  .top{padding:10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));background:#F6F7F9;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .h1{font-size:32px;margin-bottom:18px}
   .row{grid-template-columns:1fr}
   .looks{grid-template-columns:repeat(2, 1fr)}
   .dates{grid-template-columns:repeat(3, 1fr)}

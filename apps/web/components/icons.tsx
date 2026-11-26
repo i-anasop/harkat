@@ -40,7 +40,7 @@ export function Envelope() {
 // Grainy overlay: SVG feTurbulence, soft-light at 0.5 opacity.
 export function Grain({ id }: { id: string }) {
   return (
-    <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, mixBlendMode: "soft-light", opacity: 0.5 }} aria-hidden="true">
+    <svg className="grain" width="100%" height="100%" style={{ position: "absolute", inset: 0, mixBlendMode: "soft-light", opacity: 0.5 }} aria-hidden="true">
       <filter id={id}>
         <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
       </filter>

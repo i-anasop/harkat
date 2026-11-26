@@ -1,7 +1,8 @@
-.reel{--p:0;position:relative;height:4600px;margin:0 calc(50% - 50vw);padding:0 40px;box-sizing:border-box;
+.reel{--p:0;position:relative;height:4600px;margin:0 -40px;padding:0 40px;box-sizing:border-box;
   background:linear-gradient(180deg, #F6F7F9 0%, #EEF3FD 5%, #DCE8FF 12%, #D6E5FF 16%, #D6E5FF 84%, #DCE8FF 88%, #EEF3FD 95%, #F6F7F9 100%)}
+.stack{display:none}
 /* The glow lives on the sticky layer, so it stays still while the films change. */
-.reelin{position:sticky;top:0;height:100vh;min-height:620px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;padding:40px 0;margin:0 -40px}
+.reelin{position:sticky;top:0;height:100dvh;min-height:620px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;padding:40px 0;margin:0 -40px}
 .reelin > *{position:relative}
 /* Glow and grain melt into the page at both ends — white, then a hint of blue, then blue. No hard edge. */
 .reelin > svg:first-child{position:absolute;-webkit-mask-image:linear-gradient(180deg, transparent 0, #000 35%, #000 65%, transparent 100%);mask-image:linear-gradient(180deg, transparent 0, #000 35%, #000 65%, transparent 100%)}
@@ -102,16 +103,17 @@
 .player,.echo,.sc,.copy{animation-duration:16s;animation-timing-function:linear;animation-fill-mode:both;animation-play-state:paused;animation-delay:calc(var(--p) * -16s)}
 
 @media (max-width: 860px){
-  .reel{height:3000px;padding:0 16px}
-  .reelin{gap:20px;padding:24px 0;margin:0 -16px;min-height:0}
-  .stage{width:calc(100% - 32px);display:grid;row-gap:24px}
-  .player{width:100%;animation-name:none}
-  .echo{display:none}
-  .copy{position:relative;grid-area:2 / 1;width:auto;gap:12px;justify-content:flex-start}
-  .title{font-size:36px}
-  .about{font-size:15px}
-  .frame{border-radius:16px;padding:5px;box-sizing:border-box}
-  .screen{border-radius:12px}
+  /* A sticky 100vh scrubber makes every finger-drag feel stuck. Stack the films instead. */
+  .reel{height:auto;margin:0;padding:8px 0 16px;background:#F6F7F9}
+  .reelin{display:none}
+  .stack{display:flex;flex-direction:column;gap:36px}
+  .block{display:flex;flex-direction:column;gap:14px}
+  .mFrame{position:relative;aspect-ratio:16 / 9;border-radius:16px;overflow:hidden;background:#FFFFFF;box-shadow:0 0 0 1px #E2E5EC}
+  .mFrame .video,.mFrame > *{position:absolute;inset:0;width:100%;height:100%}
+  .mCopy{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+  .title{font-size:clamp(26px, 7vw, 36px)}
+  .about{font-size:16px;line-height:1.5;max-width:none}
+  .credit{min-height:44px;display:inline-flex;align-items:center}
 }
 
 /* Reduced motion (e.g. Windows "Animation effects" off): the global rule switches every animation

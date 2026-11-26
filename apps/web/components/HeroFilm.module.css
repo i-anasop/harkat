@@ -19,9 +19,11 @@
 @keyframes growM{from{transform:scale(.94);border-radius:24px}to{transform:none;border-radius:18px}}
 
 @media (max-width: 720px){
-  .sec{padding:0 0 80px}
-  .stage{border-radius:18px}
+  .sec{padding:0 0 64px}
+  .stage{border-radius:16px;animation:none}
   .play{width:52px;height:52px;margin:-26px 0 0 -26px}
-  .stage{animation-name:growM}
+}
+@media (hover: none){
+  .playing .play{opacity:1;transform:none}
 }
 @media (prefers-reduced-motion: reduce){ .stage{animation:none} }

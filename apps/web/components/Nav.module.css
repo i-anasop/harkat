@@ -1,10 +1,38 @@
-.nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:28px 0}
-.brand{display:flex;align-items:center;gap:10px;font-weight:500;font-size:22px;letter-spacing:-0.05em}
-.links{display:flex;flex-wrap:wrap;align-items:center;gap:36px;font-size:15px}
+.nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:22px 0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:500;font-size:22px;letter-spacing:-0.05em;min-height:44px}
+.links{display:flex;flex-wrap:wrap;align-items:center;gap:28px;font-size:15px}
 .links a.current{color:#0D1222;border-bottom:1px solid #0D1222;padding-bottom:3px}
+.menu{display:none}
 
 @media (max-width: 720px){
-  .nav{padding:20px 0;row-gap:18px}
-  .links{width:100%;justify-content:space-between;gap:8px 14px;font-size:15px}
-  .links a{padding:10px 0;min-height:44px;display:inline-flex;align-items:center}
+  .nav{flex-direction:column;align-items:stretch;gap:0;padding:8px 0 4px}
+  .bar{width:100%;min-height:56px}
+  .menu{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-width:44px;min-height:44px;padding:0 12px;border:0;border-radius:12px;
+    background:#FFFFFF;color:#0D1222;box-shadow:0 0 0 1px #E2E5EC;
+    font:inherit;font-size:15px;font-weight:500;cursor:pointer;
+  }
+  .burger,.burger::before,.burger::after{
+    display:block;width:16px;height:1.5px;border-radius:1px;background:#0D1222;position:relative;
+  }
+  .burger::before,.burger::after{content:"";position:absolute;left:0}
+  .burger::before{top:-5px}
+  .burger::after{top:5px}
+  .menu[aria-expanded="true"] .burger{background:transparent}
+  .menu[aria-expanded="true"] .burger::before{top:0;transform:rotate(45deg)}
+  .menu[aria-expanded="true"] .burger::after{top:0;transform:rotate(-45deg)}
+  .links{display:none;flex-direction:column;align-items:stretch;gap:4px;padding:8px 0 12px}
+  .links.open{display:flex}
+  .links a{
+    min-height:44px;display:flex;align-items:center;padding:0 4px;
+    font-size:17px;border-bottom:0;
+  }
+  .links a.current{border-bottom:0;font-weight:500}
+  .links :global(.btn){align-self:flex-start;margin-top:8px}
+}
+
+@media (min-width: 721px){
+  .menuLabel{display:none}
 }

@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 26 Nov 2026, before the mobile pass and the prompt-home rebuild. Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 26 Nov 2026, after the mobile pass. The prompt-home rebuild is not in yet. Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -338,7 +338,7 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 ## Known gaps
 
 - Generated films are still templates: a title on a brand field, a dashboard, a card, a ring, a chart. They are not agency-quality launch films. Do not sell the raw Studio output as the delivered film.
-- The site was given a responsive CSS pass (`@media (max-width: 720px)` in `globals.css` and several modules) but a phone test on 26 Nov 2026 still felt unresponsive on every page and every scroll. Treat that as unfixed until a real phone-width audit says otherwise (horizontal overflow, `100vh`, tap targets, scroll jank).
+- Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The home reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, 414, 768, and 1280 found `scrollWidth === clientWidth` on every public page.
 - Studio is a separate form page, not the front door. The engine is not yet the main product.
 - Domain is not chosen. Brand-kit notes mention Cloudflare Pages; the site is actually set up for **Vercel**.
 - No bank/card checkout. Crypto only, and only when NOWPayments keys are present.
