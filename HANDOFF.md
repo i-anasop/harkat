@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 27 Nov 2026, after the chat UI pass (plan card, streaming, film progress) and the rhythm and studio pass on the stage. Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 27 Nov 2026, after the chat UI pass and the film fixes (cuts, copy, approved plan, typed website). Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -200,7 +200,7 @@ Each layout is a full frame, not a small card in a void. Type is large. Product 
 
 `frame: "portrait"` on the studio body (or `compileDirection` opts) draws 1080×1920. The default is 1920×1080. Local renders are 30fps.
 
-A 30s film is about 36 cuts, average **0.8s** (measured rhythm a little longer). `cutShots` splits each director shot into pieces of about 0.8s. Inside a piece the stage runs two to four sub-events on a clock (`STATE.step`, about 0.4–0.6s): the headline gives way to a single word, then to a build list; a counter ticks up to the brief’s number; panels take turns in front; a cursor moves and clicks; a connector draws. A frame 0.5s later is a different picture. `made.layouts` stays the director’s list, one use of each layout, which is what the tests check. The pieces are the cuts.
+`cutShots` leaves a shot whole unless it is longer than 2 seconds, and then it splits that shot into two pieces at most. The `end` layout is never split. `timeShots` holds the end card for about 2 seconds. A scene’s lines are that shot’s copy plus at most one of its own rows. A second line is the only time the stage swaps copy mid-shot. Big type is capped around 120–160px. The bottom ribbon, when it shows, is the previous line only, and it is not drawn on the end card.
 
 Product layouts are not one window. `dashboard`, `code`, `chat`, `search`, `kanban`, `toggles`, and `notify` are a stack of overlapping panels (a main crop, a second card, a callout), a cursor, and an SVG connector. Copy in those panels is the brief. The camera stays a small push, drift, or parallax so the panels remain in the frame. No perspective, no rotateX/rotateY.
 
@@ -218,11 +218,11 @@ Style is nine axes in `style.js`. A seed fills any axis the direction leaves bla
 | density | air, pack | How tight the panels sit |
 | pace | snap, slow | The sub-event step (about 0.4s or 0.6s) |
 
-The hand-authored films pin a studio: Keel is mono, sharp, snap, diagonal, line. Lumen is display, pill, glide, plain, field. Linear is sans, sharp, spring, grid, type, parallax. North is display on bands. Harbor is light type on dots. A new seed still reorders the middle shots and shifts which sub-event leads.
+The hand-authored films pin a studio: Keel is mono, sharp, snap, diagonal, line. Lumen is display, pill, glide, plain, field. Linear is sans, sharp, spring, grid, type, parallax. North is display on bands. Harbor is light type on dots. A new seed reorders the middle shots unless the plan was approved in chat. An approved plan is played in the order it was sent.
 
-The bars breathe, type keeps a small bob, and a line of earlier beats scrolls along the bottom.
+`POST /api/studio/film` accepts an optional `plan`. A director shot list (`shots`) is followed and does not spend a model call. A chat plan (`title`, `beats`, `length`, `colours`) is compiled into one shot per beat plus the end card (`directionFromBeats`). Layouts are chosen from the words (a name becomes `logo`, “bug” becomes `code`, and so on). That plan is not reshuffled, and `planNote` is `plan`. The beats stay in the site text so the words are allowed. They are not copied into every feature. One line becomes the problem and one other line becomes the single feature. An invalid plan falls through to the director, then to the rules.
 
-`POST /api/studio/film` accepts an optional `plan`. A director shot list (`shots`) is followed and does not spend a model call. The chat plan (`title`, `beats`, `length`, `colours`) is not that object: those beats are written into the brief and the site text, and the director then writes the shots. An invalid shot list falls through to the director, then to the rules.
+Make film sends the first user message and any website from the chip or from that message. A typed host is kept when the scrape fails. It is not replaced with `name.example`. The page fetch waits 6 seconds and, if that fails, tries once more with a browser user agent. A logo has about 1.2 seconds and does not block the film.
 
 When the time budget has about 4.5s left after the shot list, a critique call may swap a layout. It cannot change the words. It is skipped when the budget is the default 9s one-call path.
 
@@ -491,11 +491,13 @@ The stage, not the model, now cuts the film. `timeShots` still fills the length.
 
 `node packages/engine/src/reel.js --only=keel,lumen,linear --sheet` writes a contact sheet, one frame every 0.5s, and skips the full mp4. `--mp4` still encodes.
 
-### Next three improvements
+### Licence
 
-1. **Let the director time the sub-events.** The clock in `stage.js` decides that a word swaps at 0.4s. The shot JSON should name two to four events (`at`, `action`, `target`) so a film can hold a chart and cut a word for a reason. The stage should play that list, not invent it.
-2. **Replace the one-function-per-layout kit with a component grammar.** A shot should place a nav, a table, an inspector, and a toast, each with a crop and a zoom target, using copy from the brief and the scraped page. That is the difference between these panels and a Synteq frame. Two open font files (a display face and a mono) should replace the single Geist file, so `face` is a real pairing.
-3. **Keep every still readable.** A sample on the 0.5s grid can still land on the first tenth of a cut, or on a single punch word. The stage should refuse a frame whose only mark is one word in a void, and it should finish entrances before the first sample a person would screenshot.
+Use only assets and libraries whose licence explicitly allows commercial resale of the films and the product. Lucide (the icons in `icons.js`) is ISC, which allows that; the copyright notice in that file stays. Do not add Remotion. Remotion’s company licence is required once the team is more than 3 people, so it is not a free dependency for Harkat.
+
+### Next step
+
+The scene kit is still drawn by code. The next pictures should be **designer-made scene templates**: a person builds the frames, and the engine only fills them with the brief’s words, colours, and timing. Do not grow `stage.js` with more generated panels in place of that.
 
 ## What changed on 27 Nov 2026 (chat)
 
@@ -503,7 +505,18 @@ Sending a line no longer renders a film. `POST /api/studio/chat` classifies the 
 
 With no provider key, `studioChat.mjs` does the same job with rules, including a polite decline for gambling, alcohol, adult content, and drugs. The system prompt forbids music (sound effects only), 3D, and invented numbers. Chat quota does not share the director’s counter.
 
-The sidebar list is a tight 14px row with a film icon, a per-item rename/pin/delete menu, and a fade at the top and bottom. Scrollbars are hidden on every page; scrolling still works. Hire a pro is a 32px dark icon with a blue gradient ring, next to the theme switch and at the top right on a phone. It links to `/pro`. The engine was not edited in this pass.
+The sidebar list is a tight 14px row with a film icon, a per-item rename/pin/delete menu, and a fade at the top and bottom. Scrollbars are hidden on every page; scrolling still works. Hire a pro is a 32px dark icon with a blue gradient ring, next to the theme switch and at the top right on a phone. It links to `/pro`.
+
+## What changed on 27 Nov 2026 (live films)
+
+Four breaks in the films people actually got from Make film:
+
+1. **Cuts.** `cutShots` was slicing every shot into several phases, including the end card. It now splits only a shot longer than 2 seconds, into two pieces, and never the end card. The end card holds about 2 seconds.
+2. **Copy.** The route put every chat beat into `features`, and `linesOf` poured features, the problem, and the rows into every scene. A scene now uses its own copy plus at most one row. The route keeps one problem line and one feature. The ribbon is the previous line only, and it is absent on the end card. Type is capped at 160px so a short name is not letter-spaced across the frame.
+3. **The chat plan.** The route only followed a plan that already had `shots`. Chat sends `{ title, beats, length, colours }`. That object is now compiled to one shot per beat plus the end card, played in that order, with `planNote` `plan`.
+4. **The website.** Make film sent `url: ""` when the site was typed in the message. It now sends the first user message and a host taken from the chip or the chat. If the scrape fails, that host stays. It is not swapped for `.example`. The fetch waits 6 seconds and retries once with a browser user agent. The logo does not hold the film up.
+
+A Keel film built from a chat plan (`logo`, `wipe`, `scatter`, `code`, `sentence`, `end`) reads one line per shot and ends on `keel.dev`. The code shot is still a drawn kit. Honest place: the broken live path is fixed; the pictures are not yet a designer’s templates.
 
 ## UI (home chat)
 

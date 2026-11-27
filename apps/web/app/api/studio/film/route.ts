@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { briefFromPrompt, composeWithModel, extractSite, fetchImageData, fetchPublicPage } from "@harkat/engine";
+import { briefFromPrompt, composeWithModel, extractSite, fetchImageData, fetchPublicPageRetry, typedHost } from "@harkat/engine";
 import { clientIp, rateLimit, sameOrigin } from "@/lib/rateLimit";
 
 export const maxDuration = 30;
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
     proof?: string;
     personalize?: boolean;
     prompt?: string;
+    message?: string;
     seed?: string | number;
     frame?: string;
     plan?: unknown;
@@ -49,6 +50,9 @@ export async function POST(req: Request) {
   let name = body.name;
   let problem = body.problem || body.oneLiner;
   let url = typeof body.url === "string" ? body.url : "";
+  const message = typeof body.message === "string" ? body.message : "";
+  const typed = typedHost(url, [message, typeof body.prompt === "string" ? body.prompt : ""]);
+  if (typed) url = typed;
   let personalize = body.personalize !== false;
   let invented = false;
   if (typeof body.prompt === "string" && body.prompt.trim()) {
@@ -59,6 +63,10 @@ export async function POST(req: Request) {
     if (!features.length) features = parsed.features;
     if (!url) url = parsed.url;
     invented = parsed.inventedHost;
+    if (typed) {
+      url = typed;
+      invented = false;
+    }
     if (invented) personalize = false;
   }
   let accent = body.accent;
@@ -68,19 +76,21 @@ export async function POST(req: Request) {
   let note = invented ? "No website yet, so the end card uses a stand-in address." : "";
   if (url && personalize) {
     try {
-      const page = await fetchPublicPage(withProto(url), { timeout: 3000, maxBytes: 700_000 });
+      const page = await fetchPublicPageRetry(withProto(url), { timeout: 6000, maxBytes: 900_000 });
       const site = extractSite(page.html, page.url);
       siteText = [site.name, site.tagline, site.excerpt].filter(Boolean).join("\n").slice(0, 1200);
       brandFont = site.font || "";
       if (!name && site.name) name = site.name;
       if (!problem && site.tagline) problem = site.tagline;
       if (!body.accentSet && site.color) accent = site.color;
-      if (!logo && site.logoHref) {
-        try {
-          logo = (await fetchImageData(site.logoHref)) ?? undefined;
-        } catch { /* a missing logo should not block the preview */ }
-      }
       if (!logo && site.logoSvg) logo = `data:image/svg+xml,${encodeURIComponent(site.logoSvg)}`;
+      if (!logo && site.logoHref) {
+        const got = await Promise.race([
+          fetchImageData(site.logoHref, { timeout: 1200 }).catch(() => null),
+          new Promise<string | null>((resolve) => setTimeout(() => resolve(null), 1200)),
+        ]);
+        if (got) logo = got;
+      }
     } catch {
       note = "We couldn’t read that site from here, so this preview uses what you typed.";
     }
@@ -92,8 +102,10 @@ export async function POST(req: Request) {
   const planBeats = Array.isArray(given?.beats) ? given.beats.filter((b): b is string => typeof b === "string" && b.trim().length > 0).slice(0, 6) : [];
   if (planBeats.length) {
     if (given?.title?.trim()) name = given.title.trim().slice(0, 48);
-    problem = planBeats[0];
-    features = planBeats.slice(0, 4);
+    const long = planBeats.find((beat) => beat.trim().length >= 8) || planBeats.join(" ");
+    problem = long.trim().slice(0, 180);
+    const one = planBeats.map((beat) => beat.trim()).find((beat) => beat && beat !== problem.trim()) || problem;
+    features = [one.slice(0, 72)];
     const colour = given?.colours || "";
     if (/^#[0-9A-Fa-f]{6}$/.test(colour)) accent = colour;
     siteText = [siteText, "Shot plan the director should follow:", ...planBeats.map((beat, i) => `${i + 1}. ${beat}`)].filter(Boolean).join("\n").slice(0, 1200);
@@ -127,7 +139,7 @@ export async function POST(req: Request) {
       seed: body.seed,
       ip: clientIp(req),
       frame: body.frame === "portrait" ? "portrait" : "landscape",
-      plan: given && Array.isArray(given.shots) ? given : undefined,
+      plan: given && (Array.isArray(given.shots) || planBeats.length) ? given : undefined,
     },
   );
   } catch {

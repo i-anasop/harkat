@@ -367,12 +367,19 @@ export default function PromptHome() {
     turnsRef.current = withPending;
     setTurns(withPending);
     try {
+      const said = turnsRef.current.flatMap((turn) => turn.role === "user" ? [turn.text] : []).join(" ");
+      const found = [url, promptText, said].join(" ").match(/https?:\/\/\S+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/\S*)?/i);
+      const site = (found ? found[0] : "").replace(/[),.;]+$/, "");
       const res = await fetch("/api/studio/film", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: sent.title,
           prompt: promptText,
-          url: url.trim(),
+          message: promptText,
+          url: /\.example(?:\/|$)/i.test(site) ? "" : site,
+          length: sent.length,
+          accent: colours || undefined,
           plan: sent,
           ...(seed ? { seed } : {}),
         }),

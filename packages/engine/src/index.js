@@ -2,9 +2,9 @@ export { screenText } from "./halal.js";
 export { readBrief } from "./brief.js";
 export { rulePlan, validatePlan } from "./plan.js";
 export { assertClear, contentRatio } from "./layout.js";
-export { extractSite, vetUrl, isBlockedIp, fetchPublicPage, fetchImageData, sanitizeSvg, accentFromPng, accentFromHtml } from "./site.js";
+export { extractSite, vetUrl, isBlockedIp, fetchPublicPage, fetchPublicPageRetry, fetchImageData, sanitizeSvg, accentFromPng, accentFromHtml } from "./site.js";
 export { estimatePlannerCost, planWithModel } from "./llm.js";
-export { briefFromPrompt } from "./prompt.js";
+export { briefFromPrompt, typedHost } from "./prompt.js";
 export { SAMPLE_BRIEF, SAMPLES } from "./sample.js";
 export { beats } from "./motion.js";
 export { buildShots } from "./scenes.js";
@@ -13,6 +13,7 @@ export { configuredProviders } from "./providers.js";
 
 import { readBrief } from "./brief.js";
 import { compileDirection, directFilm } from "./direct.js";
+import { directionFromBeats } from "./dsl.js";
 import { buildFilm } from "./film.js";
 import { rulePlan } from "./plan.js";
 
@@ -45,9 +46,15 @@ export async function composeWithModel(input, opts = {}) {
   const read = readBrief(input);
   if (!read.ok) return read;
   if (opts.plan && typeof opts.plan === "object") {
-    const followed = compileDirection(read.brief, opts.plan, opts);
-    if (followed.ok) {
-      return { ok: true, ...followed, planSource: "model", planCost: 0, planTokens: { in: 0, out: 0 }, planNote: "plan" };
+    let direction = opts.plan;
+    if (!Array.isArray(direction.shots) && Array.isArray(direction.beats)) {
+      direction = directionFromBeats(read.brief, direction.beats, opts.siteText || "");
+    }
+    if (direction && Array.isArray(direction.shots)) {
+      const followed = compileDirection(read.brief, direction, { ...opts, approved: true });
+      if (followed.ok) {
+        return { ok: true, ...followed, planSource: "model", planCost: 0, planTokens: { in: 0, out: 0 }, planNote: "plan" };
+      }
     }
   }
   if (opts.model === false || process.env.HARKAT_DIRECTOR === "0") return ruled(read.brief, opts, "off");

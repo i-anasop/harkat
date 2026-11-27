@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { briefFromPrompt, compose } from "../src/index.js";
+import { briefFromPrompt, compose, typedHost } from "../src/index.js";
 
 test("a sentence becomes a sample film", () => {
   const parsed = briefFromPrompt("Keel finds the bug before the launch ships");
@@ -27,6 +27,13 @@ test("a link inside the sentence is the website", () => {
   assert.equal(parsed.ok, true);
   assert.equal(parsed.url, "https://linear.app");
   assert.equal(parsed.inventedHost, false);
+});
+
+test("a host typed in the chat is kept and a stand-in is not", () => {
+  assert.equal(typedHost("", ["Make a film for linear.app please"]), "linear.app");
+  assert.equal(typedHost("https://keel.dev/docs", []), "https://keel.dev/docs");
+  assert.equal(typedHost("https://keel.example", ["see linear.app"]), "linear.app");
+  assert.equal(typedHost("", ["only keel.example"]), "");
 });
 
 test("a short line is refused, and a gambling line still fails the brief", () => {

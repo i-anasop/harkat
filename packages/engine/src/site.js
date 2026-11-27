@@ -178,7 +178,7 @@ export async function fetchPublicPage(raw, opts = {}) {
     const res = await fetchImpl(url.href, {
       redirect: "manual",
       signal: AbortSignal.timeout(timeout),
-      headers: { accept: "text/html,application/xhtml+xml", "user-agent": "HarkatBot/1.0" },
+      headers: { accept: "text/html,application/xhtml+xml", "user-agent": opts.userAgent || "HarkatBot/1.0" },
     });
     if ([301, 302, 303, 307, 308].includes(res.status)) {
       const next = res.headers.get("location");
@@ -193,6 +193,18 @@ export async function fetchPublicPage(raw, opts = {}) {
     return { url: url.href, html: buf.toString("utf8") };
   }
   throw new Error("Too many redirects.");
+}
+
+const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+/** One attempt, then the same fetch with a browser user agent. A logo is not part of this. */
+export async function fetchPublicPageRetry(raw, opts = {}) {
+  try {
+    return await fetchPublicPage(raw, opts);
+  } catch (err) {
+    if (opts.userAgent === (opts.retryAgent || BROWSER_UA)) throw err;
+    return await fetchPublicPage(raw, { ...opts, userAgent: opts.retryAgent || BROWSER_UA });
+  }
 }
 
 /** Most repeated saturated hex in the early page. Late illustration colours are left out. */

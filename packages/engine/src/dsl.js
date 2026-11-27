@@ -206,6 +206,42 @@ export function beatsFromBrief(brief) {
   return beats;
 }
 
+function fittingLayout(copy, name, used) {
+  const text = String(copy);
+  const candidates = [];
+  if (name && text.toLowerCase() === String(name).toLowerCase()) candidates.push("logo");
+  if (/\d+(?:\.\d+)?%?$/.test(text)) candidates.push("metric");
+  if (/\b(bug|diff|code|type|review)\b/i.test(text)) candidates.push("code");
+  if (/\b(finds|find|search|issue)\b/i.test(text)) candidates.push("search");
+  if (/\b(reply|inbox|chat|send)\b/i.test(text)) candidates.push("chat");
+  if (/\b(invoice|cash|ledger)\b/i.test(text)) candidates.push("dashboard");
+  if (/\b(file|grid|page)\b/i.test(text)) candidates.push("kanban");
+  if (/\b(flips|flip|toggle|state)\b/i.test(text)) candidates.push("toggles");
+  candidates.push("wipe", "scatter", "sentence", "sweep", "stack", "notify", "swap", "compare", "orbit", "dashboard", "code", "search");
+  return candidates.find((layout) => !used.has(layout)) || "sweep";
+}
+
+/** One shot per approved chat beat, then the end card. Layouts are chosen here. The stage does not reshuffle them. */
+export function directionFromBeats(brief, beats, siteText = "") {
+  const lines = [];
+  for (const beat of Array.isArray(beats) ? beats : []) {
+    const clipped = clipWords(String(beat), 6).join(" ");
+    const checked = copyAllowed(clipped, brief, siteText);
+    if (!checked.ok || lines.includes(checked.copy)) continue;
+    lines.push(checked.copy);
+    if (lines.length === 8) break;
+  }
+  if (!lines.length) return null;
+  const used = new Set();
+  const shots = lines.map((copy, index) => {
+    const layout = fittingLayout(copy, brief.name, used);
+    used.add(layout);
+    return { role: index === 0 ? "hook" : "feature", copy, layout, rows: [] };
+  });
+  shots.push({ role: "close", copy: brief.hostname, layout: "end", rows: [] });
+  return { concept: "Approved plan", treatment: "paper", rhythm: "tight", shots };
+}
+
 export function grammarDirection(brief, seed = "0", siteText = "") {
   const program = pickProgram(brief, seed);
   const beats = beatsFromBrief(brief);
@@ -253,7 +289,7 @@ export function normalizeDirection(raw, brief, siteText = "", seed = "0") {
       weight: Math.min(3, Math.max(1, Number(shot.weight) || (rhythm === "measured" ? 2 : 1))),
     });
   }
-  if (cleaned.length < 4) return { ok: false, reason: "A film needs at least 4 shots." };
+  if (cleaned.length < 3) return { ok: false, reason: "A film needs at least 3 shots." };
 
   const last = cleaned.length - 1;
   cleaned[last] = {

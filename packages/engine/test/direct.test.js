@@ -3,7 +3,8 @@ import test from "node:test";
 import { readBrief } from "../src/brief.js";
 import { compileDirection, directFilm, estimateDirectorCost, filmPrompt, resetDirectorState } from "../src/direct.js";
 import { DIRECTOR_BRIEFS, RECORDED } from "../src/exemplars.js";
-import { grammarDirection, LAYOUTS, normalizeDirection } from "../src/dsl.js";
+import { directionFromBeats, grammarDirection, LAYOUTS, normalizeDirection } from "../src/dsl.js";
+import { cutShots } from "../src/stage.js";
 import { compose, composeWithModel } from "../src/index.js";
 import { configuredProviders } from "../src/providers.js";
 
@@ -60,11 +61,11 @@ test("recorded directions compile into different 2D films", () => {
   assert.match(films.linear.html, /data-face="sans"/);
   assert.match(films.linear.html, /data-camera="parallax"/);
   for (const id of ["keel", "lumen", "linear"]) {
-    const parts = [...films[id].html.matchAll(/data-start="([\d.]+)" data-end="([\d.]+)"/g)];
-    const durs = parts.map((part) => Number(part[2]) - Number(part[1]));
-    const avg = durs.reduce((sum, dur) => sum + dur, 0) / durs.length;
-    assert.ok(avg >= 0.55 && avg <= 1.2, `${id} avg cut ${avg.toFixed(2)}s`);
-    assert.ok(films[id].html.includes("data-slam"), id);
+    const parts = [...films[id].html.matchAll(/data-layout="([^"]+)" data-phase="\d+" data-start="([\d.]+)" data-end="([\d.]+)"/g)];
+    const ends = parts.filter((part) => part[1] === "end");
+    assert.equal(ends.length, 1, id);
+    const endDur = Number(ends[0][3]) - Number(ends[0][2]);
+    assert.ok(endDur >= 1.8 && endDur <= 2.2, `${id} end ${endDur}`);
   }
   assert.doesNotMatch(films.lumen.html, /class="tile word"/);
   const rules = compose(DIRECTOR_BRIEFS.keel);
@@ -88,6 +89,49 @@ test("every layout places without an overlap", () => {
     }, { seed: layout });
     assert.equal(made.ok, true, `${layout}: ${made.reason}`);
   }
+});
+
+test("cuts stay whole under two seconds and the end card is one hold", () => {
+  const held = cutShots([
+    { layout: "wipe", start: 0, end: 1.6, dur: 1.6, enter: "whip" },
+    { layout: "end", start: 1.6, end: 4.2, dur: 2.6, enter: "cut" },
+  ]);
+  assert.equal(held.length, 2);
+  assert.equal(held[1].layout, "end");
+  assert.equal(held[1].dur, 2.6);
+  const split = cutShots([{ layout: "code", start: 0, end: 3, dur: 3, enter: "mask" }]);
+  assert.equal(split.length, 2);
+  assert.equal(split[0].phase, 0);
+  assert.equal(split[1].phase, 1);
+  assert.equal(split[1].enter, "cut");
+});
+
+test("a scene shows its own line, and a chat plan is followed in order", async () => {
+  const src = brief();
+  const one = compileDirection(src, {
+    shots: [
+      { copy: "Types the change", layout: "wipe", rows: [] },
+      { copy: "Finds the bug", layout: "scatter", rows: [] },
+      { copy: "keel.example", layout: "end" },
+    ],
+  }, { seed: "lines", approved: true });
+  assert.equal(one.ok, true, one.reason);
+  const wipe = one.html.split('data-layout="wipe"')[1].split('data-layout="scatter"')[0];
+  assert.match(wipe, />T<\/span><span class="ch"[^>]*>y<\/span>/);
+  assert.doesNotMatch(wipe, /Finds the bug|Shows the diff|Reviews stall/);
+  assert.doesNotMatch(one.html.split('data-layout="end"')[1].split("</section>")[0], /data-ribbon/);
+  assert.match(wipe, /font-size:156px/);
+  assert.doesNotMatch(wipe, /font-size:2\d\dpx/);
+  const plan = { title: "Keel", beats: ["Keel", "Reviews stall", "Types the change", "Finds the bug"], length: 30, colours: "#0E7C66" };
+  const alpha = await composeWithModel(DIRECTOR_BRIEFS.keel, { plan, model: false, seed: "a" });
+  const beta = await composeWithModel(DIRECTOR_BRIEFS.keel, { plan, model: false, seed: "b" });
+  assert.equal(alpha.ok, true, alpha.reason);
+  assert.equal(alpha.planNote, "plan");
+  assert.deepEqual(alpha.layouts, beta.layouts);
+  assert.deepEqual(alpha.layouts, ["logo", "wipe", "scatter", "code", "end"]);
+  assert.doesNotMatch(alpha.html, /Shows the diff/);
+  const built = directionFromBeats(src, plan.beats);
+  assert.equal(built.shots.length, 5);
 });
 
 test("a new seed changes the picture and an approved plan is followed", async () => {

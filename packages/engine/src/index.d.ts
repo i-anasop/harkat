@@ -62,10 +62,12 @@ export function composeWithModel(
 ): Promise<ComposeOk | ComposeNo>;
 export function screenText(text: string): { ok: true } | { ok: false; reason: string };
 export function extractSite(html: string, pageUrl: string): SiteExtract;
-export function fetchPublicPage(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<{ url: string; html: string }>;
+export function fetchPublicPage(url: string, opts?: { timeout?: number; maxBytes?: number; userAgent?: string }): Promise<{ url: string; html: string }>;
+export function fetchPublicPageRetry(url: string, opts?: { timeout?: number; maxBytes?: number; userAgent?: string; retryAgent?: string }): Promise<{ url: string; html: string }>;
 export function fetchImageData(url: string, opts?: { timeout?: number; maxBytes?: number }): Promise<string | null>;
 export function isBlockedIp(ip: string): boolean;
 export function estimatePlannerCost(brief: { name?: string; problem?: string; features?: string[]; audience?: string; goal?: string; tone?: string; length?: number; proof?: string; hostname?: string }, siteText?: string): { inputTokens: number; outputTokens: number; usd: number };
+export function typedHost(url?: string, texts?: string[]): string;
 export function briefFromPrompt(prompt: string, url?: string):
   | { ok: true; name: string; problem: string; features: string[]; url: string; inventedHost: boolean }
   | { ok: false; reason: string };

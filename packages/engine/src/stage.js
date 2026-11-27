@@ -19,35 +19,22 @@ export function frameOf(opts = {}) {
   return { w: 1920, h: 1080, portrait: false };
 }
 
-function linesOf(shot, brief, n = 4, index = 0) {
-  const pool = [];
-  const push = (text) => {
-    const bits = clipWords(text, 6);
-    const line = bits.join(" ");
-    if (line && !pool.includes(line)) pool.push(line);
-  };
-  (shot.rows || []).forEach(push);
-  (brief.features || []).forEach(push);
-  push(brief.problem);
-  push(shot.copy);
-  if (!pool.length) pool.push(shot.copy || brief.name);
-  const start = index % pool.length;
-  const spun = pool.slice(start).concat(pool.slice(0, start));
-  const out = [];
-  for (const line of spun) {
-    if (line === shot.copy && out.length) continue;
-    out.push(line);
-    if (out.length === n) break;
-  }
-  return out.length ? out : [shot.copy];
+function linesOf(shot) {
+  const copy = String(shot.copy || "").replace(/\s+/g, " ").trim();
+  const row = (shot.rows || [])
+    .map((item) => String(item || "").replace(/\s+/g, " ").trim())
+    .find((item) => item && item !== copy);
+  if (!copy) return row ? [row] : [];
+  return row ? [copy, row] : [copy];
 }
 
 function typeSize(text, portrait, start) {
   const n = Math.max(1, String(text).length);
-  let size = start || (portrait ? 156 : 248);
-  const max = portrait ? 960 : 1700;
-  const min = portrait ? 72 : 84;
-  while (size > min && n * size * 0.52 > max) size -= 6;
+  const cap = portrait ? 132 : 160;
+  let size = Math.min(cap, start || (portrait ? 120 : 156));
+  const max = portrait ? 720 : 1500;
+  const min = portrait ? 72 : 96;
+  while (size > min && n * size * 0.52 > max) size -= 4;
   return size;
 }
 
@@ -80,10 +67,10 @@ function wordList(rows, copy) {
 }
 
 function typeExtras(copy, rows) {
-  const words = wordList(rows, copy);
-  const bits = (rows || []).filter((row) => row && row !== copy).slice(0, 4);
-  const build = bits.map((row, i) => `<span data-i="${i}">${esc(row)}</span>`).join("");
-  return `<div class="punch" data-slam data-words="${esc(words.join("|"))}">${esc(words[0] || copy)}</div><div class="build">${build}</div><i class="cutbar" data-cutbar></i>`;
+  const extra = (rows || []).filter((row) => row && row !== copy).slice(0, 1);
+  if (!extra.length) return `<i class="cutbar" data-cutbar></i>`;
+  const words = wordList(extra, copy);
+  return `<div class="punch" data-slam data-words="${esc(words.join("|"))}">${esc(extra[0])}</div><div class="build"><span data-i="0">${esc(extra[0])}</span></div><i class="cutbar" data-cutbar></i>`;
 }
 
 function panel(i, x, y, w, h, inner, extra = "") {
@@ -260,47 +247,41 @@ function spinShots(shots, seed) {
   return [head, ...mid.slice(shift), ...mid.slice(0, shift), tail];
 }
 
-/** Split a hold into 0.6–1.1s pieces. Layout names stay on the source shots. */
-export function cutShots(shots, rhythm = "tight") {
-  const limit = rhythm === "measured" ? 1.15 : 1.02;
+/** At most one extra cut, and only on a hold longer than 2s. The end card stays whole. */
+export function cutShots(shots) {
   const out = [];
   for (const shot of shots) {
-    const pieces = shot.dur > limit + 0.2 ? Math.min(4, Math.max(2, Math.round(shot.dur / 0.8))) : 1;
-    if (pieces === 1) {
+    if (shot.layout === "end" || !(shot.dur > 2)) {
       out.push({ ...shot, phase: 0 });
       continue;
     }
-    const piece = shot.dur / pieces;
-    for (let p = 0; p < pieces; p++) {
-      const start = p === 0 ? shot.start : Math.round((shot.start + piece * p) * 100) / 100;
-      const end = p === pieces - 1 ? shot.end : Math.round((shot.start + piece * (p + 1)) * 100) / 100;
-      out.push({
-        ...shot,
-        phase: p % 4,
-        start,
-        end,
-        dur: Math.round((end - start) * 100) / 100,
-        enter: p === 0 ? shot.enter : "cut",
-      });
-    }
+    const mid = Math.round((shot.start + shot.dur / 2) * 100) / 100;
+    out.push({ ...shot, phase: 0, end: mid, dur: Math.round((mid - shot.start) * 100) / 100 });
+    out.push({
+      ...shot,
+      phase: 1,
+      start: mid,
+      dur: Math.round((shot.end - mid) * 100) / 100,
+      enter: "cut",
+    });
   }
   return out;
 }
 
 export function timeShots(shots, length) {
-  const weights = shots.map((shot) => Math.min(3, Math.max(1, Number(shot.weight) || 1)));
-  const sum = weights.reduce((total, weight) => total + weight, 0) || shots.length;
+  const lastIndex = shots.length - 1;
+  const tail = shots[lastIndex]?.layout === "end" ? Math.min(2, length) : Math.min(1.2, length);
+  const usable = Math.max(0.4, Math.round((length - tail) * 100) / 100);
+  const weights = shots.slice(0, lastIndex).map((shot) => Math.min(3, Math.max(1, Number(shot.weight) || 1)));
+  const sum = weights.reduce((total, weight) => total + weight, 0) || weights.length || 1;
   let t = 0;
   return shots.map((shot, index) => {
-    const last = index === shots.length - 1;
-    let dur = last ? length - t : (length * weights[index]) / sum;
-    dur = Math.round(dur * 100) / 100;
-    if (!last && t + dur > length - 1.2) dur = Math.round(Math.max(1.2, length - 1.2 - t) * 100) / 100;
-    const start = Math.round(t * 100) / 100;
-    if (last) {
-      dur = Math.round((length - start) * 100) / 100;
-      return { ...shot, start, dur, end: length };
+    if (index === lastIndex) {
+      const start = Math.round(t * 100) / 100;
+      return { ...shot, start, dur: Math.round((length - start) * 100) / 100, end: length };
     }
+    const dur = Math.round(((usable * weights[index]) / sum) * 100) / 100;
+    const start = Math.round(t * 100) / 100;
     t = Math.round((start + dur) * 100) / 100;
     return { ...shot, start, dur, end: t };
   });
@@ -503,6 +484,7 @@ function moveCursor(root, local, phase) {
   cursor.style.transform = "scale(" + click.toFixed(2) + ")";
 }
 function typeCut(root, local) {
+  if (!root.querySelector(".build [data-i]")) return;
   const big = root.querySelector(".big");
   const punch = root.querySelector(".punch");
   if (!big && !punch) return;
@@ -514,7 +496,7 @@ function typeCut(root, local) {
   }
   if (punch) {
     punch.style.opacity = mode === 0 ? "0" : "1";
-    punch.style.fontSize = mode === 1 ? (STATE.portrait ? "148px" : "200px") : "64px";
+    punch.style.fontSize = mode === 1 ? (STATE.portrait ? "120px" : "156px") : "64px";
     punch.style.top = mode === 1 ? "34%" : "auto";
     punch.style.bottom = mode === 1 ? "auto" : "12%";
   }
@@ -648,7 +630,7 @@ export function renderDirection(brief, direction, opts = {}) {
   const frame = frameOf(opts);
   const accent = /^#[0-9A-Fa-f]{6}$/.test(brief.accent || "") ? brief.accent.toUpperCase() : "#2E4BDB";
   const style = resolveStyle(opts.seed || brief.name, direction.style);
-  const ordered = timeShots(spinShots(direction.shots, opts.seed || brief.name), brief.length);
+  const ordered = timeShots(opts.approved ? direction.shots : spinShots(direction.shots, opts.seed || brief.name), brief.length);
   const layouts = ordered.map((shot) => shot.layout);
   const timed = cutShots(ordered, direction.rhythm);
   for (let i = 0; i < timed.length - 1; i++) {
@@ -659,8 +641,8 @@ export function renderDirection(brief, direction, opts = {}) {
   }
   const history = [];
   const shots = timed.map((shot, index) => {
-    const ribbon = history.length
-      ? `<div class="ribbon"><span data-ribbon>${esc([...history, ...history].join("    ·    "))}</span></div>`
+    const ribbon = shot.layout !== "end" && history.length
+      ? `<div class="ribbon"><span data-ribbon>${esc(history[history.length - 1])}</span></div>`
       : "";
     const elements = [{
       id: `s${index}`,
@@ -670,7 +652,7 @@ export function renderDirection(brief, direction, opts = {}) {
       h: frame.h,
       html: `<div class="back"></div>${sceneHtml(shot, brief, frame, index)}${ribbon}`,
     }];
-    if (shot.copy && !shot.phase) history.push(shot.copy);
+    if (shot.copy && !shot.phase && shot.layout !== "end") history.push(shot.copy);
     assertClear(elements);
     return { ...shot, elements };
   });
@@ -884,7 +866,7 @@ body.portrait .half{min-height:50%}
 .logowrap,.endwrap{flex-direction:column;gap:28px}
 .dot{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:4px;background:var(--accent)}
 .g-accent .dot{background:var(--on)}
-.wordmark{font-size:220px;font-weight:600;letter-spacing:-.06em}
+.wordmark{font-size:160px;font-weight:600;letter-spacing:-.06em}
 .biglogo{width:220px;height:220px;object-fit:contain}
 .host{font-size:128px;font-weight:600;letter-spacing:-.05em}
 .sample{letter-spacing:.18em;text-transform:uppercase;font-size:18px;opacity:.75}

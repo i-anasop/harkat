@@ -9,6 +9,21 @@ function wordsOf(text) {
  * A missing website becomes name.example, the same stand-in the Keel sample uses.
  * Nothing here is shown as a customer result.
  */
+const HOST = /https?:\/\/\S+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/\S*)?/i;
+
+/** A website the person typed in the chip or in a chat line. A `.example` stand-in is not one. */
+export function typedHost(url = "", texts = []) {
+  const list = [url, ...(Array.isArray(texts) ? texts : [texts])];
+  for (const value of list) {
+    const raw = String(value ?? "");
+    const found = raw.match(HOST);
+    const site = (found ? found[0] : "").replace(/[),.;]+$/, "").trim();
+    if (!site || /\.example(?:\/|$)/i.test(site)) continue;
+    return site;
+  }
+  return "";
+}
+
 export function briefFromPrompt(prompt, url = "") {
   const raw = String(prompt ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").replace(/\s+/g, " ").trim();
   const given = String(url ?? "").trim();

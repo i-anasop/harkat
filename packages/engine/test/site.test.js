@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { extractSite, isBlockedIp, sanitizeSvg, vetUrl } from "../src/site.js";
+import { extractSite, fetchPublicPageRetry, isBlockedIp, sanitizeSvg, vetUrl } from "../src/site.js";
 
 const FIXTURE = `<!doctype html><html><head>
 <title>Keel — Ship the review</title>
@@ -27,6 +27,27 @@ test("svg sanitizer drops script and event handlers", () => {
   assert.ok(clean);
   assert.doesNotMatch(clean, /script|onload|javascript:/i);
   assert.equal(sanitizeSvg("<div>no</div>"), null);
+});
+
+test("a failed page fetch is retried once with a browser user agent", async () => {
+  const lookup = async () => [{ address: "93.184.216.34" }];
+  const agents = [];
+  let n = 0;
+  const fetchImpl = async (_url, opts) => {
+    agents.push(opts.headers["user-agent"]);
+    n += 1;
+    if (n === 1) throw new Error("blocked");
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: (name) => (name === "content-type" ? "text/html" : null) },
+      arrayBuffer: async () => new TextEncoder().encode("<html>ok</html>").buffer,
+    };
+  };
+  const page = await fetchPublicPageRetry("https://linear.app", { lookupFn: lookup, fetchImpl, timeout: 1000 });
+  assert.equal(agents[0], "HarkatBot/1.0");
+  assert.match(agents[1], /Mozilla\/5\.0/);
+  assert.match(page.html, /ok/);
 });
 
 test("private addresses and odd ports are blocked without a live lookup", async () => {
