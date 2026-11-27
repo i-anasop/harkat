@@ -103,8 +103,9 @@ export async function POST(req: Request) {
   if (planBeats.length) {
     if (given?.title?.trim()) name = given.title.trim().slice(0, 48);
     const long = planBeats.find((beat) => beat.trim().length >= 8) || planBeats.join(" ");
-    problem = long.trim().slice(0, 180);
-    const one = planBeats.map((beat) => beat.trim()).find((beat) => beat && beat !== problem.trim()) || problem;
+    const line = long.trim().slice(0, 180);
+    problem = line;
+    const one = planBeats.map((beat) => beat.trim()).find((beat) => beat && beat !== line) || line;
     features = [one.slice(0, 72)];
     const colour = given?.colours || "";
     if (/^#[0-9A-Fa-f]{6}$/.test(colour)) accent = colour;
