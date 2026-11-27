@@ -25,10 +25,13 @@ type Saved = {
   duration?: number;
   events?: Cue[];
   note?: string;
+  messages?: Turn[];
 };
 
+type Plan = { title: string; beats: string[]; length: Length; colours: string };
 type Turn =
   | { id: string; role: "user"; text: string }
+  | { id: string; role: "assistant"; text: string; kind?: "talk" | "plan" | "decline"; plan?: Plan | null; streaming?: boolean }
   | { id: string; role: "film"; prompt: string; html?: string; duration?: number; events?: Cue[]; note?: string; error?: string; pending?: boolean };
 
 function subscribeHistory(onChange: () => void) {
@@ -38,6 +41,10 @@ function subscribeHistory(onChange: () => void) {
     window.removeEventListener("harkat-history", onChange);
     window.removeEventListener("storage", onChange);
   };
+}
+
+function savedAt() {
+  return Date.now();
 }
 
 function storeHistory(list: Saved[]) {
@@ -154,6 +161,7 @@ export default function PromptHome() {
   const [last, setLast] = useState({ name: "", prompt: "", url: "" });
   const [playId, setPlayId] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const turnsRef = useRef<Turn[]>([]);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const sideRef = useRef<HTMLElement>(null);
@@ -166,6 +174,7 @@ export default function PromptHome() {
   }, [prompt, turns.length]);
 
   useEffect(() => {
+    turnsRef.current = turns;
     const el = threadRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
@@ -230,57 +239,141 @@ export default function PromptHome() {
     setSwatch(null);
     setLength(item.length);
     setLast({ name: item.name, prompt: item.prompt, url: item.url });
-    const film: Turn = item.html
-      ? { id: `${item.id}-film`, role: "film", prompt: item.prompt, html: item.html, duration: item.duration, events: item.events, note: item.note }
-      : { id: `${item.id}-film`, role: "film", prompt: item.prompt, error: "This cut isn’t on this device anymore. Send the line again." };
+    const stored = Array.isArray(item.messages) ? item.messages : [];
+    const restored: Turn[] = stored.length
+      ? stored.map((turn, i) => ({ ...turn, id: turn.id || `${item.id}-${i}`, streaming: false }))
+      : [
+          { id: `${item.id}-user`, role: "user", text: item.prompt },
+          item.html
+            ? { id: `${item.id}-film`, role: "film", prompt: item.prompt, html: item.html, duration: item.duration, events: item.events, note: item.note }
+            : { id: `${item.id}-film`, role: "film", prompt: item.prompt, error: "This cut isn’t on this device anymore. Send the line again." },
+        ];
     setPlayId(null);
-    setTurns([{ id: `${item.id}-user`, role: "user", text: item.prompt }, film]);
+    setTurns(restored);
     setMenuFor(null);
     setDrawer(false);
   };
 
+  const persist = (id: string, title: string, nextTurns: Turn[], extra: Partial<Saved> = {}, at = 0) => {
+    const first = nextTurns.find((turn) => turn.role === "user");
+    const promptText = first && first.role === "user" ? first.text : title;
+    const item: Saved = {
+      ...extra,
+      id,
+      title: title.slice(0, 60),
+      prompt: promptText,
+      url: url.trim(),
+      length,
+      name: title,
+      at,
+      messages: nextTurns,
+    };
+    setLast({ name: item.name, prompt: item.prompt, url: item.url });
+    setActive(id);
+    remember(item);
+  };
+
   const send = async () => {
     const line = prompt.trim();
-    if (busy || (line.length < 8 && !url.trim())) return;
+    if (busy || line.length < 1) return;
     setBusy(true);
     const userId = crypto.randomUUID();
-    const filmId = crypto.randomUUID();
-    setTurns((prev) => [...prev, { id: userId, role: "user", text: line || url.trim() }, { id: filmId, role: "film", prompt: line, pending: true }]);
+    const replyId = crypto.randomUUID();
+    const chatId = active || userId;
+    const prior = turns.filter((turn) => turn.role === "user" || turn.role === "assistant");
+    const next: Turn[] = [...turns, { id: userId, role: "user", text: line }, { id: replyId, role: "assistant", text: "", streaming: true }];
+    setTurns(next);
     setPrompt("");
+    let acc = "";
+    let final: { kind?: "talk" | "plan" | "decline"; plan?: Plan | null } = {};
+    try {
+      const res = await fetch("/api/studio/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...prior, { role: "user", text: line }].map((turn) => turn.role === "user"
+            ? { role: "user", text: turn.text }
+            : { role: "assistant", text: turn.text, plan: "plan" in turn ? turn.plan : undefined }),
+          url: url.trim(),
+          length,
+          colours: swatch || "",
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error("chat");
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const chunks = buf.split("\n\n");
+        buf = chunks.pop() || "";
+        for (const chunk of chunks) {
+          const data = chunk.replace(/^data:\s*/, "").trim();
+          if (!data) continue;
+          let msg: { t?: string; done?: boolean; kind?: "talk" | "plan" | "decline"; plan?: Plan | null; text?: string };
+          try { msg = JSON.parse(data); } catch { continue; }
+          if (typeof msg.t === "string") {
+            acc += msg.t;
+            const shown = acc;
+            setTurns((prev) => prev.map((turn) => turn.id === replyId ? { ...turn, text: shown } : turn));
+          }
+          if (msg.done) {
+            final = { kind: msg.kind, plan: msg.plan };
+            if (!acc && typeof msg.text === "string") acc = msg.text;
+          }
+        }
+      }
+    } catch {
+      acc = acc || "I couldn’t reply just now. Try that once more.";
+      final = { kind: "talk" };
+    } finally {
+      const doneTurn: Turn = { id: replyId, role: "assistant", text: acc, kind: final.kind || "talk", plan: final.plan || null, streaming: false };
+      const saved = next.map((turn) => turn.id === replyId ? doneTurn : turn);
+      setTurns(saved);
+      persist(chatId, final.plan?.title || line, saved, {}, savedAt());
+      setBusy(false);
+      if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) requestAnimationFrame(() => boxRef.current?.focus());
+    }
+  };
+
+  const makeFilm = async (plan: Plan) => {
+    if (busy) return;
+    setBusy(true);
+    const filmId = crypto.randomUUID();
+    const pending: Turn = { id: filmId, role: "film", prompt: plan.beats.join(". "), pending: true };
+    const withPending = [...turnsRef.current, pending];
+    turnsRef.current = withPending;
+    setTurns(withPending);
     try {
       const res = await fetch("/api/studio/film", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: line, url: url.trim(), length, goal: "launch", tone: "plain" }),
+        body: JSON.stringify({
+          name: plan.title,
+          prompt: [plan.title, ...plan.beats].join(". "),
+          url: url.trim(),
+          length: plan.length,
+          accent: /^#[0-9A-Fa-f]{6}$/.test(plan.colours) ? plan.colours : undefined,
+          plan,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setTurns((prev) => prev.map((turn) => turn.id === filmId ? { id: filmId, role: "film", prompt: line, error: data.reason || "That preview didn’t come through. Please try again." } : turn));
+        setTurns((prev) => prev.map((turn) => turn.id === filmId ? { ...turn, pending: false, error: data.reason || "That preview didn’t come through." } : turn));
         return;
       }
-      const item: Saved = {
-        id: userId,
-        title: (line || data.name || "Film").slice(0, 60),
-        prompt: line || url.trim(),
-        url: url.trim(),
-        length,
-        name: typeof data.name === "string" ? data.name : "",
-        at: Date.now(),
-        html: data.html,
-        duration: data.duration,
-        events: Array.isArray(data.events) ? data.events : [],
-        note: typeof data.note === "string" ? data.note : "",
-      };
-      setLast({ name: item.name, prompt: item.prompt, url: item.url });
-      setActive(item.id);
+      const events = Array.isArray(data.events) ? data.events : [];
       setPlayId(filmId);
-      remember(item);
-      setTurns((prev) => prev.map((turn) => turn.id === filmId ? { id: filmId, role: "film", prompt: line, html: data.html, duration: data.duration, events: item.events, note: item.note } : turn));
+      const saved = turnsRef.current.map((turn) => turn.id === filmId ? { id: filmId, role: "film" as const, prompt: plan.beats.join(". "), html: data.html, duration: data.duration, events, note: data.note || "" } : turn);
+      turnsRef.current = saved;
+      setTurns(saved);
+      if (active) persist(active, plan.title, saved, { html: data.html, duration: data.duration, events, note: data.note || "" }, savedAt());
     } catch {
-      setTurns((prev) => prev.map((turn) => turn.id === filmId ? { id: filmId, role: "film", prompt: line, error: "Network error. Please try again." } : turn));
+      setTurns((prev) => prev.map((turn) => turn.id === filmId ? { ...turn, pending: false, error: "Network error. Please try again." } : turn));
     } finally {
       setBusy(false);
-      if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) requestAnimationFrame(() => boxRef.current?.focus());
     }
   };
 
@@ -318,7 +411,7 @@ export default function PromptHome() {
             <span className={s.logoMark}><Mark size={20} /></span>
             <span className={s.logoSwap}><PanelIcon /></span>
           </button>
-          <span className={s.brand}><Mark size={26} /> harkat</span>
+          <span className={s.brand}><Mark size={20} /> harkat</span>
           <button type="button" className={s.iconBtn} onClick={() => setSide(true)} title="Collapse sidebar" aria-label="Collapse sidebar"><PanelIcon /></button>
           <button type="button" className={s.drawerX} onClick={() => setDrawer(false)} aria-label="Close menu"><CloseIcon /></button>
         </div>
@@ -339,7 +432,7 @@ export default function PromptHome() {
           <SearchIcon />
         </button>
 
-        <div className={`${s.recents} bare`}>
+        <div className={s.recents}>
           {history.length === 0 && <p className={s.emptyList}>Films you make show up here.</p>}
           {groups.pinned.length > 0 && (
             <section>
@@ -367,11 +460,11 @@ export default function PromptHome() {
         </div>
 
         <div className={s.foot}>
-          <Link href="/pro" className={s.hire} onClick={hire} title="Hire a pro"><HireIcon /><span>Hire a pro</span></Link>
           <button type="button" className={s.footLink} title={theme === "dark" ? "Light theme" : "Dark theme"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
             <span>{theme === "dark" ? "Light" : "Dark"}</span>
           </button>
+          <Link href="/pro" className={s.hire} onClick={hire} title="Hire a pro" aria-label="Hire a pro"><BriefcaseIcon /></Link>
         </div>
       </aside>
       {drawer && <button type="button" className={s.scrim} aria-label="Close menu" onClick={() => setDrawer(false)} />}
@@ -380,20 +473,22 @@ export default function PromptHome() {
         <header className={s.topbar}>
           <button type="button" className={s.menuBtn} aria-label="Open menu" aria-expanded={drawer} onClick={() => setDrawer(true)}><PanelIcon /></button>
           <span className={s.topBrand}><Mark size={22} /> harkat</span>
-          <Link href="/pro" className={s.topHire} onClick={hire}>Hire a pro</Link>
+          <Link href="/pro" className={s.hire} onClick={hire} title="Hire a pro" aria-label="Hire a pro"><BriefcaseIcon /></Link>
         </header>
 
         {empty ? (
-          <div className={`${s.intro} bare`}>
+          <div className={s.intro}>
             <h1 className={s.hello}><Mark size={34} /><span>What are we making?</span></h1>
             <Composer boxRef={boxRef} prompt={prompt} setPrompt={setPrompt} url={url} setUrl={setUrl} urlOpen={urlOpen} setUrlOpen={setUrlOpen} domain={domain} swatch={swatch} setSwatch={setSwatch} length={length} setLength={setLength} busy={busy} send={send} />
           </div>
         ) : (
           <>
             <h1 className={s.sr}>Harkat</h1>
-            <div className={`${s.thread} bare`} ref={threadRef}>
-              {turns.map((turn) => turn.role === "user" ? (
+            <div className={s.thread} ref={threadRef}>
+              {turns.map((turn, index) => turn.role === "user" ? (
                 <p key={turn.id} className={s.user}>{turn.text}</p>
+              ) : turn.role === "assistant" ? (
+                <AssistantBubble key={turn.id} turn={turn} latest={index === turns.reduce((at, item, i) => item.role === "assistant" && item.plan ? i : at, -1)} busy={busy} onMake={() => turn.plan && makeFilm(turn.plan)} onChange={() => boxRef.current?.focus()} />
               ) : (
                 <FilmBubble key={turn.id} turn={turn} autoPlay={turn.id === playId} onHire={hire} />
               ))}
@@ -461,9 +556,9 @@ function HistoryRow({ item, active, menu, onOpen, onMenu, onCloseMenu, onRename,
             </div>
           ) : (
             <>
-              <button type="button" role="menuitem" onClick={() => { setDraft(item.title); setEditing(true); onCloseMenu(); }}>Rename</button>
-              <button type="button" role="menuitem" onClick={() => { onPin(); onCloseMenu(); }}>{item.pinned ? "Unpin" : "Pin"}</button>
-              <button type="button" role="menuitem" className={s.dangerItem} onClick={() => setConfirm(true)}>Delete</button>
+              <button type="button" role="menuitem" onClick={() => { setDraft(item.title); setEditing(true); onCloseMenu(); }}><PencilIcon /> Rename</button>
+              <button type="button" role="menuitem" onClick={() => { onPin(); onCloseMenu(); }}><PinIcon /> {item.pinned ? "Unpin" : "Pin"}</button>
+              <button type="button" role="menuitem" className={s.dangerItem} onClick={() => setConfirm(true)}><TrashIcon /> Delete</button>
             </>
           )}
         </div>
@@ -541,11 +636,43 @@ function Composer({ boxRef, prompt, setPrompt, url, setUrl, urlOpen, setUrlOpen,
           </button>
         )}
         <LengthPicker length={length} setLength={setLength} />
-        <button className={s.send} type="submit" disabled={busy || (prompt.trim().length < 8 && !url.trim())} aria-label="Make the film">
+        <button className={s.send} type="submit" disabled={busy || !prompt.trim()} aria-label="Send">
           {busy ? <span className={s.spin} /> : <ArrowUp />}
         </button>
       </div>
     </form>
+  );
+}
+
+function AssistantBubble({ turn, latest, busy, onMake, onChange }: {
+  turn: Extract<Turn, { role: "assistant" }>;
+  latest: boolean;
+  busy: boolean;
+  onMake: () => void;
+  onChange: () => void;
+}) {
+  return (
+    <div className={s.answer}>
+      <span className={s.avatar}><Mark size={15} /></span>
+      <div className={s.answerBody}>
+        <p className={s.reply}>{turn.text}{turn.streaming && <span className={s.caret} />}</p>
+        {turn.plan && !turn.streaming && (
+          <div className={s.plan}>
+            <p className={s.planTitle}>{turn.plan.title}</p>
+            <ol className={s.beats}>
+              {turn.plan.beats.map((beat, i) => <li key={`${i}-${beat}`}>{beat}</li>)}
+            </ol>
+            <p className={s.meta}>{turn.plan.length}s{turn.plan.colours ? ` · ${turn.plan.colours}` : ""}</p>
+          </div>
+        )}
+        {latest && turn.plan && !turn.streaming && (
+          <div className={s.actions}>
+            <button type="button" className={s.make} onClick={onMake} disabled={busy}>Make film</button>
+            <button type="button" onClick={onChange}>Change something</button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -609,8 +736,17 @@ function FilmIcon() {
 function MoreIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.2" fill="currentColor" /><circle cx="8" cy="8" r="1.2" fill="currentColor" /><circle cx="12.5" cy="8" r="1.2" fill="currentColor" /></svg>;
 }
-function HireIcon() {
-  return <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M3.2 13.2c.6-2.2 2.4-3.4 4.8-3.4s4.2 1.2 4.8 3.4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
+function PencilIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.2 3.4 L12.6 6.8 L6.2 13.2 H2.8 V9.8 Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>;
+}
+function PinIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2 V6.2 M5.4 6.2 H10.6 L9.8 9.2 H6.2 Z M8 9.2 V13.6" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" strokeLinecap="round" /></svg>;
+}
+function TrashIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 4.4 H12.8 M6.2 4.4 V3.2 H9.8 V4.4 M4.4 4.4 L5 12.6 H11 L11.6 4.4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function BriefcaseIcon() {
+  return <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="5.2" width="12" height="8.2" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M6 5.2 V3.8 a1 1 0 0 1 1-1 h2 a1 1 0 0 1 1 1 V5.2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M2 8.6 H14" stroke="currentColor" strokeWidth="1.4" /></svg>;
 }
 function ClockIcon() {
   return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.2" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M8 5.1 V8.1 L10 9.3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;

@@ -86,6 +86,18 @@ export async function POST(req: Request) {
     }
   }
   if (!features.length && problem) features = [problem];
+  const given = body.plan && typeof body.plan === "object"
+    ? body.plan as { title?: string; beats?: unknown; length?: number; colours?: string; shots?: unknown }
+    : undefined;
+  const planBeats = Array.isArray(given?.beats) ? given.beats.filter((b): b is string => typeof b === "string" && b.trim().length > 0).slice(0, 6) : [];
+  if (planBeats.length) {
+    if (given?.title?.trim()) name = given.title.trim().slice(0, 48);
+    problem = planBeats[0];
+    features = planBeats.slice(0, 4);
+    const colour = given?.colours || "";
+    if (/^#[0-9A-Fa-f]{6}$/.test(colour)) accent = colour;
+    siteText = [siteText, "Shot plan the director should follow:", ...planBeats.map((beat, i) => `${i + 1}. ${beat}`)].filter(Boolean).join("\n").slice(0, 1200);
+  }
 
   const goals = ["launch", "feature", "explainer"] as const;
   const tones = ["quiet", "plain", "bold"] as const;
@@ -105,7 +117,7 @@ export async function POST(req: Request) {
       proof: body.proof,
       goal: goals.find((item) => item === body.goal) ?? "launch",
       tone: tones.find((item) => item === body.tone) ?? "plain",
-      length: lengths.find((item) => item === Number(body.length)) ?? 30,
+      length: lengths.find((item) => item === Number(given?.length)) ?? lengths.find((item) => item === Number(body.length)) ?? 30,
     },
     {
       fontUrl: "/fonts/Geist-Variable.woff2",
@@ -115,7 +127,7 @@ export async function POST(req: Request) {
       seed: body.seed,
       ip: clientIp(req),
       frame: body.frame === "portrait" ? "portrait" : "landscape",
-      plan: body.plan && typeof body.plan === "object" ? body.plan : undefined,
+      plan: given && Array.isArray(given.shots) ? given : undefined,
     },
   );
   } catch {

@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 26 Nov 2026, after the AI director (free-model shot plans, richer stage, quota). Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 27 Nov 2026, after the chat assistant (plan first, then Make film). Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -16,7 +16,7 @@ Harkat AI makes cheap, agency-quality **2D motion-graphics launch films** for AI
 
 Two products share one site today:
 
-1. **The engine, on the home page.** A person describes a product (and can paste a website). The page posts to `/api/studio/film` and plays a sample film in the browser. With a free model key, a director model chooses the concept, the lines, and the shots. The engine compiles that into 2D motion (it does not run model-written HTML). With no key, or when the quota is spent, the old rule planner still runs. A person still finishes any film a client pays for. Past prompts stay in `localStorage` under `harkat.promptHistory` (no database).
+1. **The engine, on the home page.** A person talks to `/api/studio/chat`. Small talk gets a short reply. A product description gets a short plan, and only **Make film** posts to `/api/studio/film` and plays a sample in the browser. With a free model key, a director model chooses the concept, the lines, and the shots. The engine compiles that into 2D motion (it does not run model-written HTML). With no key, or when the quota is spent, the old rule planner still runs. A person still finishes any film a client pays for. The thread stays in `localStorage` under `harkat.promptHistory` (no database).
 2. **The studio service, on `/pro`.** A client orders a film a person makes. Live prices are **Spark $30**, **Launch $50**, **Studio $100**. Older founding notes in `docs/04_OFFER_AND_BUSINESS.md` list $250 / $600 / $1,200. Those were **not** put on the site. Do not change the live prices unless Momin says so.
 
 Tagline: *Your motion team, without the agency.*
@@ -119,7 +119,7 @@ There is no database. Orders are JSON files. History for a future prompt UI, if 
 
 | Path | What it is |
 |------|------------|
-| `/` | The product. A ChatGPT-style prompt: describe the product, optional website (logo and colours), length 15/30/45. The sample film plays in the thread. History is a sidebar (a drawer on a phone). “Hire a pro” goes to `/pro`. |
+| `/` | The product. A chat: small talk gets a short reply, a product description gets a short plan, and only **Make film** renders a preview. Optional website (logo and colours), length 15/30/45. History is a sidebar (a drawer on a phone). A small gradient-ring icon, “Hire a pro”, goes to `/pro`. |
 | `/pro` | The old marketing home: hero, hero film, Pond logo, work reel, stats, order panel (`#order`). |
 | `/work` | Portfolio. Pond films only if the env flag is on. |
 | `/process` | How a film is made, FAQ |
@@ -138,7 +138,8 @@ API:
 
 | Method | Path | Role |
 |--------|------|------|
-| POST | `/api/studio/film` | Brief or a free-text `prompt` in, film HTML out. Same-origin, 30 previews / 10 min / IP, plus a director cap (default 8/day/IP and 40/day global, per server instance). Optional `seed` varies the film. A prompt with no website uses `name.example` as a stand-in end card and does not fetch that host. |
+| POST | `/api/studio/chat` | The assistant. Same-origin, 24 messages / 10 min / IP, and its own daily cap (same env defaults as the director, 8/IP and 40 global, but a separate counter so chatting does not spend film renders). Streams SSE `data: {"t":"..."}` then `data: {"done":true,"kind","plan"}`. Gemini first via `configuredProviders()`, then Groq, OpenRouter, Cloudflare. No key, or a failed provider, uses the rules in `apps/web/lib/studioChat.mjs`. A greeting never becomes a plan. |
+| POST | `/api/studio/film` | Brief or a free-text `prompt` in, film HTML out. Called only from Make film. Optional `plan` (`title`, `beats`, `length`, `colours`) is written into the brief and appended to the site text so the director follows that cut. Same-origin, 30 previews / 10 min / IP, plus a director cap (default 8/day/IP and 40/day global, per server instance). Optional `seed` varies the film. A prompt with no website uses `name.example` as a stand-in end card and does not fetch that host. |
 | POST | `/api/order` | Save an order. Altcha, honeypot, halal screen, rate limit. |
 | GET | `/api/altcha` | Challenge for the “I’m not a robot” widget. |
 | POST | `/api/pay/invoice` | Open a NOWPayments invoice. |
@@ -201,7 +202,7 @@ Each layout is a full frame, not a small card in a void. Type is large. Product 
 
 The camera does not settle. After the entrance, the frame keeps a push or a drift, the background moves the other way, bars breathe, type keeps a small bob, and a line of earlier beats scrolls along the bottom. A seed picks the background (grid, dots, bands, diagonal, or plain), the camera, and the corner shape. The model may also set type (tight, wide, heavy, light), easing, colour use, density, and pace. The same brief with a new seed reorders the middle shots as well as the style.
 
-`POST /api/studio/film` accepts an optional `plan` object, the shot list `/api/studio/chat` will send once that route exists. A valid plan is followed and does not spend a model call. An invalid plan falls through to the director, then to the rules.
+`POST /api/studio/film` accepts an optional `plan`. A director shot list (`shots`) is followed and does not spend a model call. The chat plan (`title`, `beats`, `length`, `colours`) is not that object: those beats are written into the brief and the site text, and the director then writes the shots. An invalid shot list falls through to the director, then to the rules.
 
 When the time budget has about 4.5s left after the shot list, a critique call may swap a layout. It cannot change the words. It is skipped when the budget is the default 9s one-call path.
 
@@ -453,7 +454,7 @@ Three commits on `main`, in this order:
 1. **`HANDOFF.md`.** This file.
 2. **Phone layout.** Removed `overflow-x` from `html`, `body`, and `.page` (that was what made scrolling feel dead). Stacked the marketing reel under 860px, swapped `100vh` for `100dvh`, stopped using `100vw`, raised tap targets to 44px, set form text to 16px, and added a real menu under 720px. Decorative loops and the grain filter stay off on small screens so a finger-drag is not fighting them.
 3. **The prompt is the home page.** Layout ideas came from the old MotionGPT chat in `ana-momin/Startup` (`Startup 001/apps/studio`): a centred box, a thread under it, a history sidebar. Colours are Harkat’s, not MotionGPT’s. `/pro` is the previous landing, with the same work, prices, and order flow. `/studio` redirects home.
-4. **Prompt-home polish (same day).** The tab title is `Harkat — AI launch films for startups`. The sidebar collapses to an icon rail (`harkat.sidebar`). History is grouped (Pinned, Today, Yesterday, Previous 7 days, Older) with rename, pin, and a confirmed delete. Search filters it. A website is a chip inside the box (`/api/brand` for the colour, `/api/favicon` for the mark). Length is a clock button, default 15s. Suggestion chips are gone. Scrollbars on this page are thin and only show on hover. MotionGPT’s light/dark switch is here as `harkat.theme` on the prompt page only; `/pro` stays light. The pictures were not changed.
+4. **Prompt-home polish (same day).** The tab title is `Harkat — AI launch films for startups`. The sidebar collapses to an icon rail (`harkat.sidebar`). History is grouped (Pinned, Today, Yesterday, Previous 7 days, Older) with rename, pin, and a confirmed delete. Search filters it. A website is a chip inside the box (`/api/brand` for the colour, `/api/favicon` for the mark). Length is a clock button, default 15s. Suggestion chips are gone. MotionGPT’s light/dark switch is here as `harkat.theme` on the prompt page only; `/pro` stays light. The pictures were not changed.
 5. **Typing no longer crashes the page.** `useSyncExternalStore` was given `() => Date.now()`. React calls that on every render, sees a new number, and renders again until it dies — the “This page couldn’t load” screen, including while typing. The day used to group history is now cached (`apps/web/lib/homeState.mjs`). Saved films from older versions, and corrupt JSON, are ignored instead of thrown. `HomeBoundary` catches anything left and can clear the saved list. Do not put `Date.now()` in a store snapshot.
 
 ## What changed on 26 Nov 2026 (director)
@@ -463,6 +464,14 @@ The rule planner is still the fallback. `/api/studio/film` asks a director model
 The picture pass after that replaced the sparse cards. The kit is kinetic type (scatter, swap, stack, icons in the line, a highlight sweep), product UI (dashboard, code, chat, search, kanban, toggles, notifications), an icon orbit, a cycling list, a metric with a chart, a dark/light split, a logo reveal, and a colour end card. Lucide icons, ISC, with the notice in `icons.js`. Renders are 1920×1080 at 30fps, and `frame: "portrait"` is 1080×1920.
 
 Hand-authored 30s films for the five archetypes: Keel, Linear, North, Lumen, Harbor. `node packages/engine/src/reel.js --mp4` writes the mp4 and a 0.5s contact sheet. They are denser than the first director pass. They are not Synteq. Honest gap: the UI is a kit, not a traced product, and a beat holds one idea instead of several overlapping.
+
+## What changed on 27 Nov 2026 (chat)
+
+Sending a line no longer renders a film. `POST /api/studio/chat` classifies the message. “hey whats up mate” gets one or two sentences and a nudge to describe the product. A product line gets a title, a few one-line beats, a length, and the site colour when `/api/brand` found one. The thread shows **Make film** and **Change something**. Only Make film calls `/api/studio/film`, and it sends the plan. A follow-up such as “make it 30 seconds” edits that plan. Replies stream as server-sent events and the page types them with a caret. The thread is stored per film in `harkat.promptHistory` (older saves that only had a prompt and HTML still open).
+
+With no provider key, `studioChat.mjs` does the same job with rules, including a polite decline for gambling, alcohol, adult content, and drugs. The system prompt forbids music (sound effects only), 3D, and invented numbers. Chat quota does not share the director’s counter.
+
+The sidebar list is a tight 14px row with a film icon, a per-item rename/pin/delete menu, and a fade at the top and bottom. Scrollbars are hidden on every page; scrolling still works. Hire a pro is a 32px dark icon with a blue gradient ring, next to the theme switch and at the top right on a phone. It links to `/pro`. The engine was not edited in this pass.
 
 ## Working agreement
 

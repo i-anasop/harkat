@@ -2,6 +2,15 @@
 
 const LENGTHS = new Set([15, 30, 45]);
 
+function cleanMessages(item, prompt, film) {
+  if (Array.isArray(item.messages)) {
+    return item.messages.filter((m) => m && (m.role === "user" || m.role === "assistant" || m.role === "film") && (typeof m.text === "string" || m.role === "film")).slice(0, 40);
+  }
+  const messages = [{ role: "user", text: prompt }];
+  if (film.html) messages.push({ role: "film", prompt, html: film.html, duration: film.duration, events: film.events, note: film.note });
+  return messages;
+}
+
 export function readHistory(raw) {
   try {
     const list = JSON.parse(raw);
@@ -17,6 +26,7 @@ export function readHistory(raw) {
       const events = Array.isArray(item.events)
         ? item.events.filter((cue) => cue && typeof cue.t === "number" && typeof cue.sfx === "string")
         : [];
+      const messages = cleanMessages(item, prompt, { html: typeof item.html === "string" ? item.html : undefined, duration: typeof item.duration === "number" ? item.duration : undefined, events, note: typeof item.note === "string" ? item.note : "" });
       out.push({
         id: typeof item.id === "string" && item.id ? item.id : `h-${out.length}`,
         title,
@@ -30,6 +40,7 @@ export function readHistory(raw) {
         duration: typeof item.duration === "number" ? item.duration : undefined,
         events,
         note: typeof item.note === "string" ? item.note : "",
+        messages,
       });
       if (out.length >= 40) break;
     }
