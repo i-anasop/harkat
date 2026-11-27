@@ -80,7 +80,6 @@ export function planFromText(text, url, length) {
   if (!parsed.ok) return null;
   const beats = [];
   const name = parsed.name || "Film";
-  pushBeat(beats, tidy(name));
   const clauses = clausesOf(parsed.problem).map((line) => tidy(withoutName(line, name)));
   if (clauses.length > 1) {
     for (const clause of clauses) pushBeat(beats, clause);

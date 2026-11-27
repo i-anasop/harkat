@@ -94,7 +94,10 @@
 }
 .footLink:hover{background:var(--hover); color:var(--ink)}
 
-.main{min-width:0; min-height:0; display:flex; flex-direction:column}
+.main{
+  min-width:0; min-height:0; display:flex; flex-direction:column;
+  background:radial-gradient(880px 380px at 50% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 68%);
+}
 .topbar{
   display:flex; align-items:center; gap:8px; min-height:56px;
   padding:max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left));
@@ -107,28 +110,62 @@
 }
 .hello{margin:0; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; text-align:center; font-size:clamp(32px, 5vw, 44px); font-weight:500; letter-spacing:-0.045em; line-height:1.05}
 .thread{
-  flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:18px;
-  width:min(720px, 100%); margin:0 auto; padding:8px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+  flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:22px;
+  width:min(720px, 100%); margin:0 auto; padding:18px max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left));
 }
+.enter{animation:rise .38s var(--ease) both}
+@keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 .user{
-  align-self:flex-end; max-width:min(460px, 92%); margin:0; padding:11px 14px; border-radius:16px 16px 4px 16px;
-  background:var(--ink); color:var(--bg); font-size:15.5px; line-height:1.45; overflow-wrap:anywhere;
+  align-self:flex-end; max-width:min(520px, 88%); margin:0; padding:10px 14px; border-radius:18px 18px 6px 18px;
+  background:color-mix(in srgb, var(--ink) 6%, var(--surface)); color:var(--ink);
+  box-shadow:inset 0 0 0 1px var(--line); font-size:15.5px; line-height:1.55; overflow-wrap:anywhere;
 }
-.answer{display:flex; gap:10px; min-width:0}
-.avatar{width:28px; height:28px; flex-shrink:0; margin-top:2px; border-radius:8px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--line); display:flex; align-items:center; justify-content:center}
-.answerBody{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px}
-.reply{margin:0; font-size:15.5px; line-height:1.45; color:var(--ink); overflow-wrap:anywhere}
-.caret{display:inline-block; width:7px; height:1.05em; margin-left:1px; vertical-align:-3px; border-radius:1px; background:currentColor; animation:blink 1.05s steps(1) infinite}
+.answer{display:flex; gap:12px; min-width:0}
+.avatar{width:28px; height:28px; flex-shrink:0; margin-top:1px; border-radius:9px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--line); display:flex; align-items:center; justify-content:center}
+.answerBody{flex:1; min-width:0; display:flex; flex-direction:column; gap:10px}
+.reply{margin:0; padding-top:3px; font-size:15.5px; line-height:1.6; color:var(--ink); overflow-wrap:anywhere}
+.caret{display:inline-block; width:2px; height:.95em; margin-left:2px; vertical-align:-2px; border-radius:1px; background:var(--accent); animation:blink 1.05s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-.plan{display:flex; flex-direction:column; gap:6px; max-width:460px; padding:12px 14px; border-radius:14px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--line)}
-.planTitle{margin:0; font-size:14px; font-weight:600; letter-spacing:-0.02em}
-.beats{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:4px}
-.beats li{position:relative; padding-left:14px; font-size:13.5px; line-height:1.4; color:var(--soft)}
-.beats li::before{content:""; position:absolute; left:0; top:.55em; width:5px; height:5px; border-radius:50%; background:var(--accent)}
-.meta{margin:0; font-size:12px; color:var(--faint)}
-.make{background:var(--ink) !important; color:var(--bg) !important; border-radius:999px !important; padding:0 14px !important}
-.make:disabled{opacity:.45}
-.pending{display:flex; flex-direction:column; gap:10px}
+.dots{display:inline-flex; align-items:center; gap:4px; height:1.2em}
+.dots i{width:5px; height:5px; border-radius:50%; background:var(--muted); animation:bob 1s ease-in-out infinite}
+.dots i:nth-child(2){animation-delay:.15s}
+.dots i:nth-child(3){animation-delay:.3s}
+@keyframes bob{0%,80%,100%{transform:translateY(0); opacity:.4} 40%{transform:translateY(-3px); opacity:1}}
+.plan{
+  display:flex; flex-direction:column; gap:12px; max-width:520px; padding:14px 14px 12px; border-radius:16px;
+  background:var(--surface); box-shadow:0 0 0 1px var(--line), 0 12px 32px rgba(13,18,34,.05);
+}
+.planHead{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.planTitle{margin:0; margin-right:auto; font-size:16px; font-weight:600; letter-spacing:-0.02em}
+.chip{display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 8px; border-radius:999px; background:var(--hover); color:var(--soft); font-size:12px; font-weight:550}
+.chip img{width:14px; height:14px; border-radius:3px}
+.chipHost{max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.swatchLg{width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.beats{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:2px}
+.beats li{display:grid; grid-template-columns:52px 22px minmax(0,1fr); gap:8px; align-items:center; min-height:34px}
+.when{font-family:var(--font-geist-mono),ui-monospace,monospace; font-size:11px; font-variant-numeric:tabular-nums; color:var(--faint)}
+.num{width:22px; height:22px; border-radius:50%; background:var(--hover); color:var(--soft); font-size:11px; font-weight:600; display:grid; place-items:center}
+.beat{width:100%; border:0; border-radius:8px; background:transparent; color:var(--ink); font:inherit; font-size:14.5px; line-height:1.4; text-align:left; padding:4px 6px; cursor:text}
+.beat:hover{background:var(--hover)}
+.beatInput{width:100%; border:0; border-radius:8px; background:var(--hover); color:var(--ink); font:inherit; font-size:16px; line-height:1.4; padding:6px 8px; outline:none}
+.make{
+  background:linear-gradient(100deg, #1F33B0 0%, #2E4BDB 52%, #6B86F2 100%) !important; color:#fff !important;
+  border-radius:999px !important; padding:0 16px !important; min-height:36px; box-shadow:0 8px 18px rgba(46,75,219,.24);
+}
+.make:hover{filter:brightness(1.06)}
+.make:disabled{opacity:.45; filter:none}
+.edit{box-shadow:inset 0 0 0 1px var(--line)}
+.frame{border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--line)}
+.frame > div{min-width:0}
+.votes{display:flex; gap:2px; margin-top:-2px}
+.votes button{width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--faint); display:grid; place-items:center; cursor:pointer}
+.votes button:hover,.votes button[aria-pressed="true"]{background:var(--hover); color:var(--ink)}
+.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.steps li{display:flex; align-items:center; gap:8px; font-size:14px; color:var(--faint)}
+.steps li[data-on="true"]{color:var(--ink); font-weight:520}
+.steps li i{width:8px; height:8px; border-radius:50%; background:var(--line); flex-shrink:0}
+.steps li[data-on="true"] i{background:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent)}
+.pending{display:flex; flex-direction:column; gap:12px}
 .skeleton{aspect-ratio:16/9; border-radius:16px; background:linear-gradient(100deg, var(--hover) 30%, var(--surface) 50%, var(--hover) 70%); background-size:200% 100%; animation:shimmer 1.3s ease-in-out infinite}
 .loadTrack{height:3px; border-radius:99px; background:var(--hover); overflow:hidden}
 .loadTrack i{display:block; height:100%; width:0; border-radius:99px; background:var(--accent); animation:load 9s var(--ease) forwards}
@@ -183,7 +220,7 @@
   width:36px; height:36px; margin-left:auto; flex-shrink:0; border:0; border-radius:50%; background:var(--ink); color:var(--bg);
   display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
 }
-.send:disabled{opacity:.35; cursor:default}
+.send:disabled{background:var(--hover); color:var(--faint); opacity:1; cursor:default}
 .spin{width:14px; height:14px; border:2px solid color-mix(in srgb, var(--bg) 35%, transparent); border-top-color:var(--bg); border-radius:50%; animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -196,7 +233,7 @@
   .hire{width:40px; height:40px}
 }
 @media (prefers-reduced-motion: reduce){
-  .side,.skeleton,.loadTrack i,.spin{animation:none; transition:none}
+  .side,.skeleton,.loadTrack i,.spin,.enter,.caret,.dots i{animation:none; transition:none}
   .loadTrack i{width:40%}
 }
 

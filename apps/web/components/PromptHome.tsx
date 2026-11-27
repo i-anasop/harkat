@@ -32,7 +32,7 @@ type Plan = { title: string; beats: string[]; length: Length; colours: string };
 type Turn =
   | { id: string; role: "user"; text: string }
   | { id: string; role: "assistant"; text: string; kind?: "talk" | "plan" | "decline"; plan?: Plan | null; streaming?: boolean }
-  | { id: string; role: "film"; prompt: string; html?: string; duration?: number; events?: Cue[]; note?: string; error?: string; pending?: boolean };
+  | { id: string; role: "film"; prompt: string; html?: string; duration?: number; events?: Cue[]; note?: string; error?: string; pending?: boolean; plan?: Plan; seed?: string };
 
 function subscribeHistory(onChange: () => void) {
   window.addEventListener("harkat-history", onChange);
@@ -161,6 +161,7 @@ export default function PromptHome() {
   const [last, setLast] = useState({ name: "", prompt: "", url: "" });
   const [playId, setPlayId] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const stickRef = useRef(true);
   const turnsRef = useRef<Turn[]>([]);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -176,9 +177,15 @@ export default function PromptHome() {
   useEffect(() => {
     turnsRef.current = turns;
     const el = threadRef.current;
-    if (!el) return;
+    if (!el || !stickRef.current) return;
     el.scrollTop = el.scrollHeight;
   }, [turns]);
+
+  const onThreadScroll = () => {
+    const el = threadRef.current;
+    if (!el) return;
+    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+  };
 
   useEffect(() => {
     if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) boxRef.current?.focus();
@@ -277,6 +284,7 @@ export default function PromptHome() {
     const line = prompt.trim();
     if (busy || line.length < 1) return;
     setBusy(true);
+    stickRef.current = true;
     const userId = crypto.randomUUID();
     const replyId = crypto.randomUUID();
     const chatId = active || userId;
@@ -338,11 +346,23 @@ export default function PromptHome() {
     }
   };
 
-  const makeFilm = async (plan: Plan) => {
+  const revisePlan = (id: string, plan: Plan) => {
+    const saved = turnsRef.current.map((turn) => turn.id === id && turn.role === "assistant" ? { ...turn, plan } : turn);
+    turnsRef.current = saved;
+    setTurns(saved);
+    if (active) persist(active, plan.title, saved, {}, savedAt());
+  };
+
+  const makeFilm = async (plan: Plan, seed = "") => {
     if (busy) return;
+    stickRef.current = true;
     setBusy(true);
     const filmId = crypto.randomUUID();
-    const pending: Turn = { id: filmId, role: "film", prompt: plan.beats.join(". "), pending: true };
+    const first = turnsRef.current.find((turn) => turn.role === "user");
+    const promptText = first && first.role === "user" ? first.text : plan.title;
+    const colours = /^#[0-9A-Fa-f]{6}$/.test(plan.colours) ? plan.colours : (swatch && /^#[0-9A-Fa-f]{6}$/.test(swatch) ? swatch : "");
+    const sent: Plan = { title: plan.title, beats: plan.beats.map((beat) => beat.trim()).filter(Boolean).slice(0, 6), length: plan.length, colours };
+    const pending: Turn = { id: filmId, role: "film", prompt: promptText, pending: true, plan: sent, seed };
     const withPending = [...turnsRef.current, pending];
     turnsRef.current = withPending;
     setTurns(withPending);
@@ -351,12 +371,10 @@ export default function PromptHome() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: plan.title,
-          prompt: [plan.title, ...plan.beats].join(". "),
+          prompt: promptText,
           url: url.trim(),
-          length: plan.length,
-          accent: /^#[0-9A-Fa-f]{6}$/.test(plan.colours) ? plan.colours : undefined,
-          plan,
+          plan: sent,
+          ...(seed ? { seed } : {}),
         }),
       });
       const data = await res.json();
@@ -366,7 +384,7 @@ export default function PromptHome() {
       }
       const events = Array.isArray(data.events) ? data.events : [];
       setPlayId(filmId);
-      const saved = turnsRef.current.map((turn) => turn.id === filmId ? { id: filmId, role: "film" as const, prompt: plan.beats.join(". "), html: data.html, duration: data.duration, events, note: data.note || "" } : turn);
+      const saved = turnsRef.current.map((turn) => turn.id === filmId ? { id: filmId, role: "film" as const, prompt: promptText, html: data.html, duration: data.duration, events, note: data.note || "", plan: sent, seed } : turn);
       turnsRef.current = saved;
       setTurns(saved);
       if (active) persist(active, plan.title, saved, { html: data.html, duration: data.duration, events, note: data.note || "" }, savedAt());
@@ -484,13 +502,13 @@ export default function PromptHome() {
         ) : (
           <>
             <h1 className={s.sr}>Harkat</h1>
-            <div className={s.thread} ref={threadRef}>
+            <div className={s.thread} ref={threadRef} onScroll={onThreadScroll}>
               {turns.map((turn, index) => turn.role === "user" ? (
-                <p key={turn.id} className={s.user}>{turn.text}</p>
+                <p key={turn.id} className={`${s.user} ${s.enter}`}>{turn.text}</p>
               ) : turn.role === "assistant" ? (
-                <AssistantBubble key={turn.id} turn={turn} latest={index === turns.reduce((at, item, i) => item.role === "assistant" && item.plan ? i : at, -1)} busy={busy} onMake={() => turn.plan && makeFilm(turn.plan)} onChange={() => boxRef.current?.focus()} />
+                <AssistantBubble key={turn.id} turn={turn} latest={index === turns.reduce((at, item, i) => item.role === "assistant" && item.plan ? i : at, -1)} busy={busy} domain={domain} fallbackColour={swatch || ""} onMake={(plan) => makeFilm(plan)} onEdit={(plan) => revisePlan(turn.id, plan)} />
               ) : (
-                <FilmBubble key={turn.id} turn={turn} autoPlay={turn.id === playId} onHire={hire} />
+                <FilmBubble key={turn.id} turn={turn} autoPlay={turn.id === playId} busy={busy} onRegen={() => turn.plan && makeFilm(turn.plan, crypto.randomUUID())} />
               ))}
             </div>
             <div className={s.dock}>
@@ -644,59 +662,134 @@ function Composer({ boxRef, prompt, setPrompt, url, setUrl, urlOpen, setUrlOpen,
   );
 }
 
-function AssistantBubble({ turn, latest, busy, onMake, onChange }: {
+function beatTimes(count: number, length: number) {
+  const n = Math.max(count, 1);
+  return Array.from({ length: count }, (_, i) => {
+    const start = Math.round((i * length) / n);
+    const end = i === n - 1 ? length : Math.round(((i + 1) * length) / n);
+    return `${start}–${end}s`;
+  });
+}
+
+function AssistantBubble({ turn, latest, busy, domain, fallbackColour, onMake, onEdit }: {
   turn: Extract<Turn, { role: "assistant" }>;
   latest: boolean;
   busy: boolean;
-  onMake: () => void;
-  onChange: () => void;
+  domain: string;
+  fallbackColour: string;
+  onMake: (plan: Plan) => void;
+  onEdit: (plan: Plan) => void;
 }) {
+  const thinking = Boolean(turn.streaming && !turn.text);
   return (
-    <div className={s.answer}>
+    <div className={`${s.answer} ${s.enter}`}>
       <span className={s.avatar}><Mark size={15} /></span>
       <div className={s.answerBody}>
-        <p className={s.reply}>{turn.text}{turn.streaming && <span className={s.caret} />}</p>
+        <p className={s.reply}>
+          {thinking ? <Thinking /> : <>{turn.text}{turn.streaming && <span className={s.caret} />}</>}
+        </p>
         {turn.plan && !turn.streaming && (
-          <div className={s.plan}>
-            <p className={s.planTitle}>{turn.plan.title}</p>
-            <ol className={s.beats}>
-              {turn.plan.beats.map((beat, i) => <li key={`${i}-${beat}`}>{beat}</li>)}
-            </ol>
-            <p className={s.meta}>{turn.plan.length}s{turn.plan.colours ? ` · ${turn.plan.colours}` : ""}</p>
-          </div>
+          <PlanCard plan={turn.plan} domain={domain} fallbackColour={fallbackColour} latest={latest} busy={busy} onMake={onMake} onEdit={onEdit} />
         )}
-        {latest && turn.plan && !turn.streaming && (
-          <div className={s.actions}>
-            <button type="button" className={s.make} onClick={onMake} disabled={busy}>Make film</button>
-            <button type="button" onClick={onChange}>Change something</button>
-          </div>
-        )}
+        {!turn.streaming && turn.text && <Votes />}
       </div>
     </div>
   );
 }
 
-function FilmBubble({ turn, autoPlay, onHire }: { turn: Extract<Turn, { role: "film" }>; autoPlay: boolean; onHire: () => void }) {
-  const stage = useRef<FilmHandle>(null);
-  const [hint, setHint] = useState("");
-  const share = async () => {
-    const text = turn.prompt || "A launch film made with Harkat";
-    if (navigator.share) {
-      try { await navigator.share({ title: "Harkat", text }); return; } catch { /* dismissed */ }
-    }
-    try { await navigator.clipboard.writeText(text); setHint("Copied the line."); } catch { setHint("Couldn’t copy from this browser."); }
+function PlanCard({ plan, domain, fallbackColour, latest, busy, onMake, onEdit }: {
+  plan: Plan;
+  domain: string;
+  fallbackColour: string;
+  latest: boolean;
+  busy: boolean;
+  onMake: (plan: Plan) => void;
+  onEdit: (plan: Plan) => void;
+}) {
+  const [draft, setDraft] = useState<string[] | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const beats = draft ?? plan.beats;
+  const colour = /^#[0-9A-Fa-f]{6}$/.test(plan.colours) ? plan.colours : (/^#[0-9A-Fa-f]{6}$/.test(fallbackColour) ? fallbackColour : "");
+  const times = beatTimes(beats.length, plan.length);
+  const current = (): Plan => ({ ...plan, beats: beats.map((beat) => beat.trim()).filter(Boolean), colours: colour });
+  const commit = (index: number, value: string) => {
+    const next = beats.map((beat, i) => i === index ? (value.trim() || beat) : beat);
+    setDraft(next);
+    setEditing(null);
+    onEdit({ ...plan, beats: next, colours: colour });
   };
   return (
-    <div className={s.answer}>
+    <div className={s.plan}>
+      <div className={s.planHead}>
+        <p className={s.planTitle}>{plan.title}</p>
+        <span className={s.chip}>{plan.length}s</span>
+        {(colour || domain) && (
+          <span className={s.chip}>
+            {domain && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/api/favicon?d=${domain}`} alt="" width={14} height={14} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            )}
+            {colour && <i className={s.swatchLg} style={{ background: colour }} title={colour} />}
+            {domain && <span className={s.chipHost}>{domain}</span>}
+          </span>
+        )}
+      </div>
+      <ol className={s.beats}>
+        {beats.map((beat, i) => (
+          <li key={`${i}-${times[i]}`}>
+            <span className={s.when}>{times[i]}</span>
+            <span className={s.num}>{i + 1}</span>
+            {editing === i ? (
+              <input
+                className={s.beatInput}
+                defaultValue={beat}
+                aria-label={`Beat ${i + 1}`}
+                autoFocus
+                maxLength={90}
+                onBlur={(e) => commit(i, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commit(i, e.currentTarget.value); }
+                  if (e.key === "Escape") setEditing(null);
+                }}
+              />
+            ) : (
+              <button type="button" className={s.beat} onClick={() => setEditing(i)}>{beat}</button>
+            )}
+          </li>
+        ))}
+      </ol>
+      {latest && (
+        <div className={s.actions}>
+          <button type="button" className={s.make} onClick={() => onMake(current())} disabled={busy || beats.length < 1}>Make film</button>
+          <button type="button" className={s.edit} onClick={() => setEditing(0)}>Edit plan</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilmBubble({ turn, autoPlay, busy, onRegen }: { turn: Extract<Turn, { role: "film" }>; autoPlay: boolean; busy: boolean; onRegen: () => void }) {
+  const stage = useRef<FilmHandle>(null);
+  const [hint, setHint] = useState("");
+  const download = () => {
+    if (!turn.html) return;
+    const blob = new Blob([turn.html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "harkat-film.html";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(window.location.href); setHint("Link copied"); }
+    catch { setHint("Couldn’t copy from this browser."); }
+  };
+  return (
+    <div className={`${s.answer} ${s.enter}`}>
       <span className={s.avatar}><Mark size={15} /></span>
       <div className={s.answerBody}>
-        {turn.pending && (
-          <div className={s.pending} role="status">
-            <div className={s.skeleton} />
-            <div className={s.loadTrack}><i /></div>
-            <p>Cutting the film</p>
-          </div>
-        )}
+        {turn.pending && <FilmProgress />}
         {turn.error && (
           <p className={s.err}>
             {turn.error}
@@ -704,19 +797,55 @@ function FilmBubble({ turn, autoPlay, onHire }: { turn: Extract<Turn, { role: "f
           </p>
         )}
         {turn.html && typeof turn.duration === "number" && (
-          <FilmStage ref={stage} html={turn.html} duration={turn.duration} events={turn.events ?? []} autoPlay={autoPlay} />
+          <div className={s.frame}>
+            <FilmStage ref={stage} html={turn.html} duration={turn.duration} events={turn.events ?? []} autoPlay={autoPlay} />
+          </div>
         )}
         {turn.note && <p className={s.note}>{turn.note}</p>}
         {turn.html && (
           <div className={s.actions}>
+            <button type="button" onClick={download}>Download</button>
+            <button type="button" onClick={onRegen} disabled={busy || !turn.plan}>Regenerate</button>
+            <button type="button" onClick={copyLink}>Copy link</button>
             <button type="button" onClick={() => stage.current?.replay()}>Replay</button>
-            <button type="button" onClick={share}>Share</button>
-            <button type="button" onClick={() => setHint("The mp4 comes with the finished film.")}>Download</button>
-            <Link href="/pro" onClick={onHire}>Hire a pro to finish</Link>
           </div>
         )}
+        {turn.html && <Votes />}
         {hint && <p className={s.hint} role="status">{hint}</p>}
       </div>
+    </div>
+  );
+}
+
+function FilmProgress() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setStep((n) => (n >= 2 ? 2 : n + 1)), 1400);
+    return () => window.clearInterval(id);
+  }, []);
+  const labels = ["Directing", "Building scenes", "Rendering"];
+  return (
+    <div className={s.pending} role="status" aria-live="polite">
+      <div className={s.skeleton} />
+      <ol className={s.steps}>
+        {labels.map((label, i) => (
+          <li key={label} data-on={i <= step ? "true" : "false"}><i />{label}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function Thinking() {
+  return <span className={s.dots} aria-label="Thinking"><i /><i /><i /></span>;
+}
+
+function Votes() {
+  const [vote, setVote] = useState<"up" | "down" | null>(null);
+  return (
+    <div className={s.votes}>
+      <button type="button" aria-label="Good" aria-pressed={vote === "up"} onClick={() => setVote(vote === "up" ? null : "up")}><ThumbUp /></button>
+      <button type="button" aria-label="Not for me" aria-pressed={vote === "down"} onClick={() => setVote(vote === "down" ? null : "down")}><ThumbDown /></button>
     </div>
   );
 }
@@ -762,6 +891,12 @@ function LinkIcon() {
 }
 function CloseIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>;
+}
+function ThumbUp() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 7.2 V13 H3.4 A1 1 0 0 1 2.4 12 V8.2 A1 1 0 0 1 3.4 7.2 Z M5 7.4 L7.2 3.2 A1.4 1.4 0 0 1 9.6 4.2 V6.2 H12.4 A1.4 1.4 0 0 1 13.8 7.8 L13 11.6 A1.4 1.4 0 0 1 11.6 12.8 H5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>;
+}
+function ThumbDown() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 8.8 V3 H12.6 A1 1 0 0 1 13.6 4 V7.8 A1 1 0 0 1 12.6 8.8 Z M11 8.6 L8.8 12.8 A1.4 1.4 0 0 1 6.4 11.8 V9.8 H3.6 A1.4 1.4 0 0 1 2.2 8.2 L3 4.4 A1.4 1.4 0 0 1 4.4 3.2 H11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>;
 }
 function ArrowUp() {
   return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13 V3 M3.5 7.5 L8 3 L12.5 7.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;

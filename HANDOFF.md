@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 27 Nov 2026, after the chat assistant (plan first, then Make film) and the rhythm and studio pass on the stage. Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 27 Nov 2026, after the chat UI pass (plan card, streaming, film progress) and the rhythm and studio pass on the stage. Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -504,6 +504,14 @@ Sending a line no longer renders a film. `POST /api/studio/chat` classifies the 
 With no provider key, `studioChat.mjs` does the same job with rules, including a polite decline for gambling, alcohol, adult content, and drugs. The system prompt forbids music (sound effects only), 3D, and invented numbers. Chat quota does not share the director’s counter.
 
 The sidebar list is a tight 14px row with a film icon, a per-item rename/pin/delete menu, and a fade at the top and bottom. Scrollbars are hidden on every page; scrolling still works. Hire a pro is a 32px dark icon with a blue gradient ring, next to the theme switch and at the top right on a phone. It links to `/pro`. The engine was not edited in this pass.
+
+## UI (home chat)
+
+The home page is the chat. Empty state is “What are we making?” over a composer (auto-grow field, website chip, length clock, send). A user line sits in a quiet right-hand bubble. The assistant is unboxed, with the Harkat mark, 15.5px type, and a soft caret while tokens arrive. Before the first token, three dots show. New messages fade in. The thread only follows the latest line when the reader is already near the bottom.
+
+A plan is a card: title, length chip, site favicon and colour when we have them, and numbered beats with timings (`0–3s`). Click a beat to edit it. **Make film** is the blue gradient; **Edit plan** opens the first beat. Make film posts `{ prompt, url, plan: { title, beats, length, colours } }` and a new `seed` only on Regenerate. `prompt` is the first user message, not the beat list.
+
+While the film is built, the thread shows Directing, then Building scenes, then Rendering. The player sits in a rounded frame, with Download (the preview HTML), Regenerate (a new seed), Copy link, and Replay. Thumbs sit under finished replies and films. Dark mode uses the same tokens. Scrollbars stay hidden.
 
 ## Working agreement
 
