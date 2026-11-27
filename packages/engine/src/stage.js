@@ -69,6 +69,32 @@ function kindOf(layout) {
   return layout || "sweep";
 }
 
+function wordList(rows, copy) {
+  const words = [];
+  for (const row of [copy, ...(rows || [])]) {
+    for (const word of String(row || "").split(" ")) {
+      if (word && !words.includes(word)) words.push(word);
+    }
+  }
+  return words.slice(0, 6);
+}
+
+function typeExtras(copy, rows) {
+  const words = wordList(rows, copy);
+  const bits = (rows || []).filter((row) => row && row !== copy).slice(0, 4);
+  const build = bits.map((row, i) => `<span data-i="${i}">${esc(row)}</span>`).join("");
+  return `<div class="punch" data-slam data-words="${esc(words.join("|"))}">${esc(words[0] || copy)}</div><div class="build">${build}</div><i class="cutbar" data-cutbar></i>`;
+}
+
+function panel(i, x, y, w, h, inner, extra = "") {
+  return `<article class="panel ${extra}" data-layer="${i}" data-focus="${i}" style="--x:${x}%;--y:${y}%;--w:${w}%;--h:${h}%">${inner}<i class="hot" data-hot="${i}" data-x="${(x + w * 0.55).toFixed(1)}" data-y="${(y + h * 0.42).toFixed(1)}"></i></article>`;
+}
+
+function stage(kind, panels, paths) {
+  const links = (paths || []).map((d, i) => `<path data-link="${i}" d="${d}"/>`).join("");
+  return `<div class="fill stage" data-kind="${kind}">${panels.join("")}<svg class="links" viewBox="0 0 100 100" preserveAspectRatio="none">${links}</svg><div class="cursor" data-cursor></div><i class="cutbar" data-cutbar></i></div>`;
+}
+
 function sceneHtml(shot, brief, frame, index = 0) {
   const layout = kindOf(shot.layout);
   const rows = linesOf(shot, brief, 4, index);
@@ -78,25 +104,25 @@ function sceneHtml(shot, brief, frame, index = 0) {
   const portrait = frame.portrait;
   const size = typeSize(copy, portrait);
   if (layout === "scatter" || layout === "sweep") {
-    return `<div class="fill typefill" data-kind="${layout}"><div class="big" style="font-size:${size}px">${wordsHtml(copy, hi)}</div><div class="sweepbar" data-sweep></div></div>`;
+    return `<div class="fill typefill" data-kind="${layout}"><div class="big" style="font-size:${size}px">${wordsHtml(copy, hi)}</div><div class="sweepbar" data-sweep></div>${typeExtras(copy, rows)}</div>`;
   }
   if (layout === "wipe") {
-    return `<div class="fill typefill" data-kind="wipe"><i class="block b1" data-block="0"></i><i class="block b2" data-block="1"></i><i class="block b3" data-block="2"></i><div class="big" style="font-size:${size}px">${wordsHtml(copy, hi)}</div></div>`;
+    return `<div class="fill typefill" data-kind="wipe"><i class="block b1" data-block="0"></i><i class="block b2" data-block="1"></i><i class="block b3" data-block="2"></i><div class="big" style="font-size:${size}px">${wordsHtml(copy, hi)}</div>${typeExtras(copy, rows)}</div>`;
   }
   if (layout === "swap") {
     const stem = copy.split(" ").slice(0, -1).join(" ");
     const cycle = rows.map((row) => row.split(" ").at(-1) || row).filter((word, i, all) => all.indexOf(word) === i);
     const slot = cycle[0] || copy;
-    return `<div class="fill typefill" data-kind="swap"><div class="big swapline" style="font-size:${Math.min(size, portrait ? 112 : 150)}px"><span>${esc(stem)}</span> <span class="slot"><span data-slot data-words="${esc(cycle.join("|"))}">${esc(slot)}</span></span></div></div>`;
+    return `<div class="fill typefill" data-kind="swap"><div class="big swapline" style="font-size:${Math.min(size, portrait ? 112 : 150)}px"><span>${esc(stem)}</span> <span class="slot"><span data-slot data-words="${esc(cycle.join("|"))}">${esc(slot)}</span></span></div>${typeExtras(copy, rows)}</div>`;
   }
   if (layout === "stack") {
     const reps = rows.length > 1 ? rows : [copy, copy, copy, copy];
-    return `<div class="fill stackfill" data-kind="stack">${reps.map((row, i) => `<div class="rep" data-rep="${i}" style="font-size:${portrait ? 92 : 120}px">${esc(row)}</div>`).join("")}</div>`;
+    return `<div class="fill stackfill" data-kind="stack">${reps.map((row, i) => `<div class="rep" data-rep="${i}" style="font-size:${portrait ? 92 : 120}px">${esc(row)}</div>`).join("")}<i class="cutbar" data-cutbar></i></div>`;
   }
   if (layout === "sentence") {
     const bits = copy.split(" ").filter(Boolean);
     const lead = bits.slice(0, -1).join(" ") || bits[0] || copy;
-    return `<div class="fill typefill" data-kind="sentence"><div class="big sent" style="font-size:${Math.min(size, portrait ? 96 : 132)}px"><span>${esc(lead)}</span><span class="inicons">${iconSet(4, portrait ? 54 : 72)}</span></div></div>`;
+    return `<div class="fill typefill" data-kind="sentence"><div class="big sent" style="font-size:${Math.min(size, portrait ? 96 : 132)}px"><span>${esc(lead)}</span><span class="inicons">${iconSet(4, portrait ? 54 : 72)}</span></div>${typeExtras(copy, rows)}</div>`;
   }
   if (layout === "dashboard") return dashboardHtml(name, rows, brief);
   if (layout === "code") return codeHtml(name, rows);
@@ -107,117 +133,122 @@ function sceneHtml(shot, brief, frame, index = 0) {
   if (layout === "search") return searchHtml(name, copy, rows);
   if (layout === "orbit") return orbitHtml(name, brief);
   if (layout === "cycler") return cyclerHtml(copy, rows, portrait);
-  if (layout === "metric") return metricHtml(copy);
+  if (layout === "metric") return metricHtml(copy, rows);
   if (layout === "compare") return compareHtml(brief, copy, rows);
   if (layout === "logo") return logoHtml(name, brief);
   return endHtml(brief);
 }
 
-function dashboardHtml(name, rows, brief) {
-  const cards = rows.slice(0, 3);
+function dashboardHtml(name, rows) {
   const bars = [42, 68, 54, 86, 48, 74, 92];
-  return `<div class="fill appwrap" data-kind="dashboard"><div class="app">
-    <aside class="rail">${iconSet(6, 26)}</aside>
-    <div class="workspace">
-      <div class="topbar"><b>${esc(name)}</b><span class="chip">${icon("search", 18)} ${esc(rows[0] || name)}</span></div>
-      <div class="statrow">${cards.map((row, i) => `<article class="stat" data-i="${i}"><span>${esc(row)}</span><div class="mini"><i data-bar="${30 + i * 18}"></i><i data-bar="${50 + i * 10}"></i><i data-bar="${70 - i * 8}"></i><i data-bar="${90 - i * 6}"></i></div></article>`).join("")}</div>
-      <div class="chartcard"><div class="chart">${bars.map((h, i) => `<i data-bar="${h}" data-i="${i}"${i === bars.length - 1 ? " data-hot=\"1\"" : ""}></i>`).join("")}</div><div class="feed">${rows.map((row, i) => `<div class="feedrow" data-i="${i}">${iconAt(i, 22)}<span>${esc(row)}</span></div>`).join("")}</div></div>
-    </div>
-  </div></div>`;
+  const chart = `<header class="ph"><b>${esc(name)}</b><span>${esc(rows[0] || name)}</span></header><div class="chart tall">${bars.map((h, i) => `<i data-bar="${h}" data-i="${i}"${i === bars.length - 1 ? " data-hot=\"1\"" : ""}></i>`).join("")}</div>`;
+  const list = `<header class="ph">${icon("dashboard", 22)}<span>${esc(rows[1] || name)}</span></header><div class="feed">${rows.map((row, i) => `<div class="feedrow" data-i="${i}">${iconAt(i, 22)}<span>${esc(row)}</span></div>`).join("")}</div>`;
+  const call = `<small>${esc(name)}</small><b data-slam data-words="${esc(rows.join("|"))}">${esc(rows[0] || name)}</b><em data-tick="86"></em>`;
+  return stage("dashboard", [
+    panel(0, 3, 7, 62, 80, chart, "crop"),
+    panel(1, 40, 12, 54, 52, list),
+    panel(2, 46, 60, 48, 32, call, "callout"),
+  ], ["M 36 58 C 46 58, 52 74, 64 76", "M 58 40 C 66 48, 64 62, 66 70"]);
 }
 
 function codeHtml(name, rows) {
-  return `<div class="fill appwrap" data-kind="code"><div class="editor">
-    <aside class="files">${rows.map((row, i) => `<div class="${i === 0 ? "on" : ""}" data-i="${i}">${icon("file", 18)}<span>${esc(row.split(" ")[0])}</span></div>`).join("")}</aside>
-    <div class="codepane">
-      <div class="tabs"><span class="on">${esc(name)}</span></div>
-      <div class="codebody">${rows.map((row, i) => {
-        const [first, ...rest] = row.split(" ");
-        return `<div class="codeline" data-i="${i}"><em>${i + 1}</em><span class="src" data-clip="${i}"><b>${esc(first || "")}</b> ${esc(rest.join(" "))}</span></div>`;
-      }).join("")}</div>
-      <div class="status"><span>${esc(name)}</span><span>${rows.length}</span></div>
-    </div>
-  </div></div>`;
+  const editor = `<div class="tabs"><span class="on">${esc(name)}</span><span>${esc(rows[0] || name)}</span></div><div class="codebody">${rows.map((row, i) => {
+    const [first, ...rest] = row.split(" ");
+    return `<div class="codeline" data-i="${i}"><em>${i + 1}</em><span class="src" data-clip="${i}"><b>${esc(first || "")}</b> ${esc(rest.join(" "))}</span></div>`;
+  }).join("")}</div>`;
+  const files = `<header class="ph">${icon("file", 20)}<span>${esc(name)}</span></header>${rows.map((row, i) => `<div class="fileline ${i === 0 ? "on" : ""}" data-i="${i}">${icon("file", 18)}<span>${esc(row)}</span></div>`).join("")}`;
+  const diff = `<header class="ph"><b>${esc(rows[0] || name)}</b></header><div class="diffline add">${esc(rows[1] || name)}</div><div class="diffline del">${esc(rows[2] || rows[0] || name)}</div>`;
+  return stage("code", [
+    panel(0, 3, 6, 66, 86, editor, "crop darkpanel"),
+    panel(1, 50, 8, 44, 44, files),
+    panel(2, 42, 54, 52, 38, diff, "callout"),
+  ], ["M 40 70 C 48 70, 50 78, 58 82", "M 64 48 C 62 56, 58 62, 56 68"]);
 }
 
 function chatHtml(name, copy, rows) {
-  return `<div class="fill appwrap" data-kind="chat"><div class="app chatapp">
-    <aside class="threads"><b>${esc(name)}</b>${rows.map((row, i) => `<div class="${i === 0 ? "on" : ""}" data-i="${i}">${iconAt(i, 18)}<span>${esc(row)}</span></div>`).join("")}</aside>
-    <div class="thread">
-      <div class="bubble them" data-i="0">${esc(rows[1] || copy)}</div>
-      <div class="bubble them soft" data-i="2">${esc(rows[2] || rows[0] || copy)}</div>
-      <div class="bubble me" data-i="1"><span data-stream="${esc(copy)}"></span></div>
-      <div class="composer">${icon("arrow", 28)}<span>${esc(copy)}</span></div>
-    </div>
-  </div></div>`;
+  const thread = `<header class="ph"><b>${esc(name)}</b></header><div class="bubble them">${esc(rows[1] || copy)}</div><div class="bubble me"><span data-stream="${esc(copy)}"></span></div>`;
+  const list = `<header class="ph">${icon("chat", 22)}<span>${esc(rows[0] || name)}</span></header>${rows.map((row, i) => `<div class="fileline ${i === 0 ? "on" : ""}" data-i="${i}">${iconAt(i, 18)}<span>${esc(row)}</span></div>`).join("")}`;
+  const composer = `${icon("arrow", 28)}<b data-slam data-words="${esc(wordList(rows, copy).join("|"))}">${esc(copy)}</b>`;
+  return stage("chat", [
+    panel(0, 3, 7, 60, 82, thread, "crop"),
+    panel(1, 46, 8, 48, 46, list),
+    panel(2, 34, 60, 60, 32, composer, "callout"),
+  ], ["M 34 68 C 42 68, 46 76, 54 78"]);
 }
 
 function notifyHtml(name, rows) {
-  return `<div class="fill notewrap" data-kind="notify">${rows.slice(0, 3).map((row, i) => `<article class="note" data-note="${i}"><div class="badge">${iconAt(i, 28)}</div><div><small>${esc(name)}</small><b>${esc(row)}</b></div></article>`).join("")}</div>`;
+  const notes = rows.slice(0, 3).map((row, i) => panel(i, 8 + i * 6, 8 + i * 14, 50, 30, `<div class="badge">${iconAt(i, 28)}</div><div><small>${esc(name)}</small><b>${esc(row)}</b></div>`));
+  notes.push(panel(3, 54, 60, 36, 26, `<small>${esc(name)}</small><b data-slam data-words="${esc(rows.join("|"))}">${esc(rows[0] || name)}</b>`, "callout"));
+  return stage("notify", notes, ["M 32 36 C 42 44, 50 56, 60 66"]);
 }
 
 function kanbanHtml(name, rows) {
   const cols = rows.slice(0, 3);
-  return `<div class="fill appwrap" data-kind="kanban"><div class="board"><div class="topbar bare"><b>${esc(name)}</b></div><div class="cols">${cols.map((col, i) => `<section class="col" data-i="${i}"><header>${esc(col.split(" ")[0])}</header><article class="${i === 1 ? "lift" : ""}">${iconAt(i, 22)}<span>${esc(col)}</span></article><article class="ghost">${esc(rows[(i + 1) % rows.length] || col)}</article></section>`).join("")}</div></div></div>`;
+  const cards = cols.map((col, i) => panel(i, 3 + i * 20, i === 1 ? 6 : 16, 34, 62, `<header class="ph">${esc(col.split(" ")[0])}</header><div class="kcard ${i === 1 ? "lift" : ""}">${iconAt(i, 22)}<span>${esc(col)}</span></div><div class="kcard ghost">${esc(rows[(i + 1) % rows.length] || col)}</div>`));
+  cards.push(panel(3, 52, 60, 42, 30, `<small>${esc(name)}</small><b data-slam data-words="${esc(rows.join("|"))}">${esc(cols[0] || name)}</b>`, "callout"));
+  return stage("kanban", cards, ["M 28 40 C 40 48, 48 64, 62 72"]);
 }
 
 function togglesHtml(name, rows) {
-  return `<div class="fill appwrap" data-kind="toggles"><div class="app">
-    <aside class="rail">${icon("settings", 26)}${iconSet(4, 24)}</aside>
-    <div class="workspace">
-      <div class="topbar"><b>${esc(name)}</b></div>
-      <div class="tlist">${rows.map((row, i) => `<div class="trow" data-i="${i}"><span>${esc(row)}</span><i class="switch" data-knob="${i}"><i></i></i></div>`).join("")}</div>
-    </div>
-  </div></div>`;
+  const list = `<header class="ph"><b>${esc(name)}</b>${icon("settings", 22)}</header><div class="tlist">${rows.map((row, i) => `<div class="trow" data-i="${i}"><span>${esc(row)}</span><i class="switch" data-knob="${i}"><i></i></i></div>`).join("")}</div>`;
+  const preview = `<small>${esc(name)}</small><b data-slam data-words="${esc(rows.join("|"))}">${esc(rows[0] || name)}</b><em data-tick="${rows.length * 24}"></em>`;
+  return stage("toggles", [
+    panel(0, 4, 8, 58, 82, list, "crop"),
+    panel(1, 46, 10, 46, 36, preview, "callout"),
+    panel(2, 50, 48, 44, 42, `<header class="ph">${esc(rows[1] || name)}</header>${iconSet(4, 36)}`, ""),
+  ], ["M 40 28 C 50 28, 54 36, 60 40", "M 46 70 C 54 64, 58 58, 64 56"]);
 }
 
 function searchHtml(name, copy, rows) {
   const hits = rows.filter((row) => row !== copy).slice(0, 4);
   const list = hits.length ? hits : rows;
-  return `<div class="fill appwrap" data-kind="search"><div class="finder">
-    <div class="field bigfield">${icon("search", 36)}<span data-line="${esc(copy)}"></span></div>
-    <div class="findbody">
-      <div class="results">${list.map((row, i) => `<div class="result${i === 0 ? " on" : ""}" data-i="${i}">${iconAt(i, 26)}<span>${esc(row)}</span>${icon("arrow", 22)}</div>`).join("")}</div>
-      <aside class="detail"><div class="detailkicker">${esc(name)}</div><div class="detailbig">${esc(list[0] || copy)}</div>${icon("search", 64)}</aside>
-    </div>
-  </div></div>`;
+  const field = `<div class="field bigfield">${icon("search", 36)}<span data-line="${esc(copy)}"></span></div>`;
+  const results = list.map((row, i) => `<div class="result${i === 0 ? " on" : ""}" data-i="${i}">${iconAt(i, 26)}<span>${esc(row)}</span>${icon("arrow", 22)}</div>`).join("");
+  const detail = `<div class="detailkicker">${esc(name)}</div><div class="detailbig" data-slam data-words="${esc(list.join("|"))}">${esc(list[0] || copy)}</div>${icon("search", 64)}`;
+  return stage("search", [
+    panel(0, 4, 4, 92, 26, field),
+    panel(1, 3, 22, 54, 72, results),
+    panel(2, 44, 28, 50, 62, detail, "darkpanel"),
+  ], ["M 28 34 C 38 40, 46 48, 56 52"]);
 }
 
 function orbitHtml(name, brief) {
   const marks = [0, 1, 2, 3, 4, 5];
-  return `<div class="fill orbitwrap" data-kind="orbit"><div class="hub">${brief.logo ? `<img class="logo" alt="">` : `<b>${esc(name)}</b>`}</div>${marks.map((i) => `<i class="orb" data-orb="${i}">${iconAt(i, 32)}</i>`).join("")}</div>`;
+  return `<div class="fill orbitwrap" data-kind="orbit"><div class="hub" data-mark>${brief.logo ? `<img class="logo" alt="">` : `<b data-slam data-words="${esc(name)}">${esc(name)}</b>`}</div>${marks.map((i) => `<i class="orb" data-orb="${i}">${iconAt(i, 32)}</i>`).join("")}<i class="cutbar" data-cutbar></i></div>`;
 }
 
 function cyclerHtml(copy, rows, portrait) {
-  return `<div class="fill cycler" data-kind="cycler"><div class="hero" style="font-size:${portrait ? 84 : 104}px">${esc(copy)}</div><div class="menu"><i class="arrow" data-arrow>${icon("arrow", 36)}</i>${rows.map((row, i) => `<div class="mitem" data-row="${i}">${esc(row)}</div>`).join("")}</div></div>`;
+  return `<div class="fill cycler" data-kind="cycler"><div class="hero" style="font-size:${portrait ? 84 : 104}px">${esc(copy)}</div><div class="menu"><i class="arrow" data-arrow>${icon("arrow", 36)}</i>${rows.map((row, i) => `<div class="mitem" data-row="${i}">${esc(row)}</div>`).join("")}</div><i class="cutbar" data-cutbar></i></div>`;
 }
 
-function metricHtml(copy) {
+function metricHtml(copy, rows) {
   const found = copy.match(/\d+(?:\.\d+)?/);
   const num = found ? found[0] : "";
   const suffix = copy.includes("%") ? "%" : "";
   const before = copy.slice(0, copy.search(/\d/)).trim();
   const bars = [36, 52, 44, 70, 58, 86, 64, 96];
-  return `<div class="fill metric" data-kind="metric"><div class="mleft">${before ? `<small>${esc(before)}</small>` : ""}<div class="num" data-count="${esc(num)}" data-suffix="${esc(suffix)}">0${esc(suffix)}</div></div><div class="mchart">${bars.map((h, i) => `<i data-bar="${h}" data-i="${i}"${i === bars.length - 1 ? " data-hot=\"1\"" : ""}></i>`).join("")}</div></div>`;
+  const words = wordList(rows, before || copy);
+  return `<div class="fill metric" data-kind="metric"><div class="mleft">${before ? `<small data-slam data-words="${esc(words.join("|"))}">${esc(before)}</small>` : ""}<div class="num" data-count="${esc(num)}" data-suffix="${esc(suffix)}">0${esc(suffix)}</div></div><div class="mchart">${bars.map((h, i) => `<i data-bar="${h}" data-i="${i}"${i === bars.length - 1 ? " data-hot=\"1\"" : ""}></i>`).join("")}</div><i class="cutbar" data-cutbar></i></div>`;
 }
 
 function compareHtml(brief, copy, rows) {
   const left = clipWords(brief.problem, 4).join(" ") || copy;
   const right = rows.find((row) => row !== left) || copy;
-  return `<div class="fill halves" data-kind="compare"><div class="half ink"><div class="big halfbig">${esc(left)}</div></div><div class="half paper"><div class="big halfbig">${esc(right)}</div></div><i class="seam" data-seam></i></div>`;
+  const card = panel(0, 36, 62, 28, 24, `<small>${esc(copy)}</small><b data-slam data-words="${esc(wordList(rows, copy).join("|"))}">${esc(right)}</b>`, "callout");
+  return `<div class="fill halves" data-kind="compare"><div class="half ink"><div class="big halfbig">${esc(left)}</div></div><div class="half paper"><div class="big halfbig">${esc(right)}</div></div><i class="seam" data-seam></i>${card}<i class="cutbar" data-cutbar></i></div>`;
 }
 
 function logoHtml(name, brief) {
   const dots = Array.from({ length: 18 }, (_, i) => `<i class="dot" data-dot="${i}"></i>`).join("");
   const mark = brief.logo ? `<img class="logo biglogo" alt="" data-mark>` : `<b class="wordmark" data-mark>${esc(name)}</b>`;
-  return `<div class="fill logowrap" data-kind="logo">${dots}<div class="mark">${mark}</div></div>`;
+  return `<div class="fill logowrap" data-kind="logo">${dots}<div class="mark">${mark}</div><i class="cutbar" data-cutbar></i></div>`;
 }
 
 function endHtml(brief) {
   const host = brief.hostname;
   const sample = brief.sample !== false ? `<div class="sample">Sample</div>` : "";
   const logo = brief.logo ? `<img class="logo biglogo" alt="">` : "";
-  return `<div class="fill endwrap" data-kind="end">${logo}<div class="host">${esc(host)}</div>${sample}</div>`;
+  return `<div class="fill endwrap" data-kind="end">${logo}<div class="host" data-mark>${esc(host)}</div>${sample}<i class="cutbar" data-cutbar></i></div>`;
 }
 
 function spinShots(shots, seed) {
@@ -227,6 +258,33 @@ function spinShots(shots, seed) {
   const mid = shots.slice(1, -1);
   const shift = hash(String(seed)) % mid.length;
   return [head, ...mid.slice(shift), ...mid.slice(0, shift), tail];
+}
+
+/** Split a hold into 0.6–1.1s pieces. Layout names stay on the source shots. */
+export function cutShots(shots, rhythm = "tight") {
+  const limit = rhythm === "measured" ? 1.15 : 1.02;
+  const out = [];
+  for (const shot of shots) {
+    const pieces = shot.dur > limit + 0.2 ? Math.min(4, Math.max(2, Math.round(shot.dur / 0.8))) : 1;
+    if (pieces === 1) {
+      out.push({ ...shot, phase: 0 });
+      continue;
+    }
+    const piece = shot.dur / pieces;
+    for (let p = 0; p < pieces; p++) {
+      const start = p === 0 ? shot.start : Math.round((shot.start + piece * p) * 100) / 100;
+      const end = p === pieces - 1 ? shot.end : Math.round((shot.start + piece * (p + 1)) * 100) / 100;
+      out.push({
+        ...shot,
+        phase: p % 4,
+        start,
+        end,
+        dur: Math.round((end - start) * 100) / 100,
+        enter: p === 0 ? shot.enter : "cut",
+      });
+    }
+  }
+  return out;
 }
 
 export function timeShots(shots, length) {
@@ -267,7 +325,13 @@ function ease(t) {
 }
 function spring(t) {
   const p = clamp(t);
-  return 1 - Math.exp(-5.2 * p) * Math.cos(7.2 * p);
+  if (STATE.ease === "glide") return ease(p);
+  const k = STATE.ease === "snap" ? 9.5 : 5.2;
+  const w = STATE.ease === "snap" ? 13 : 7.2;
+  return 1 - Math.exp(-k * p) * Math.cos(w * p);
+}
+function phaseOf(local, base) {
+  return (base || 0) + (STATE.shift || 0) + Math.floor(Math.max(0, local) / (STATE.step || 0.48));
 }
 function scatter(root, local) {
   root.querySelectorAll("[data-ch]").forEach((ch) => {
@@ -302,7 +366,7 @@ function swap(root, local) {
   if (!slot) return;
   const words = (slot.dataset.words || "").split("|").filter(Boolean);
   if (!words.length) return;
-    const step = STATE.pace === "slow" ? 0.95 : 0.42;
+    const step = STATE.step || (STATE.pace === "slow" ? 0.62 : 0.42);
   const index = Math.floor(Math.max(0, local) / step) % words.length;
   const u = ease(clamp((local % step) / 0.28));
   slot.textContent = words[index];
@@ -312,7 +376,7 @@ function swap(root, local) {
 function stack(root, local) {
   const reps = [...root.querySelectorAll("[data-rep]")];
   if (!reps.length) return;
-  const active = Math.floor(Math.max(0, local) / (STATE.pace === "slow" ? 0.7 : 0.38)) % reps.length;
+  const active = Math.floor(Math.max(0, local) / (STATE.step || 0.42)) % reps.length;
   reps.forEach((rep, i) => {
     const on = i === active;
     rep.style.opacity = on ? "1" : "0.16";
@@ -372,16 +436,99 @@ function orbit(root, local) {
 function cycler(root, local) {
   const rows = [...root.querySelectorAll("[data-row]")];
   if (!rows.length) return;
-  const active = Math.floor(Math.max(0, local) / 0.55) % rows.length;
+  const active = Math.floor(Math.max(0, local) / (STATE.step || 0.48)) % rows.length;
   rows.forEach((row, i) => row.classList.toggle("on", i === active));
   const arrow = root.querySelector("[data-arrow]");
   if (arrow) arrow.style.transform = "translateY(" + (active * 92).toFixed(0) + "px)";
 }
 function counts(root, local) {
-  root.querySelectorAll("[data-count]").forEach((node) => {
-    const p = ease(clamp((local - 0.1) / 0.8));
-    node.textContent = Math.round((+node.dataset.count || 0) * p) + (node.dataset.suffix || "");
+  const jumped = Math.min(1, Math.floor(Math.max(0, local) / 0.08) / 5);
+  root.querySelectorAll("[data-count],[data-tick]").forEach((node) => {
+    const target = +(node.dataset.count || node.dataset.tick || 0);
+    node.textContent = Math.round(target * jumped) + (node.dataset.suffix || "");
   });
+}
+function slam(root, local) {
+  root.querySelectorAll("[data-slam]").forEach((node) => {
+    const words = (node.dataset.words || "").split("|").filter(Boolean);
+    if (words.length < 2 || node.closest(".big, .hero")) return;
+    const step = STATE.step || 0.48;
+    const index = Math.floor(Math.max(0, local) / step) % words.length;
+    const u = spring(clamp((local % step) / 0.16));
+    if (node.textContent !== words[index]) node.textContent = words[index];
+    node.style.transform = "translateY(" + ((1 - Math.min(1, u)) * 22).toFixed(1) + "px)";
+    node.style.opacity = "1";
+  });
+}
+function build(root, local) {
+  root.querySelectorAll(".build [data-i]").forEach((node) => {
+    const i = +node.dataset.i;
+    const p = spring(clamp((local - i * (STATE.step || 0.48) * 0.55) / 0.2));
+    node.style.opacity = String(Math.min(1, p));
+    node.style.transform = "translateX(" + ((1 - Math.min(1, p)) * -36).toFixed(1) + "px)";
+  });
+}
+function focusPanels(root, local, phase) {
+  const panels = [...root.querySelectorAll("[data-focus]")];
+  if (!panels.length) return;
+  const on = ((phase % panels.length) + panels.length) % panels.length;
+  panels.forEach((panel) => {
+    const i = +panel.dataset.focus;
+    const born = spring(clamp((local - i * 0.035) / 0.1));
+    const hot = i === on;
+    panel.style.opacity = String(Math.min(1, 0.35 + born * 0.65));
+    panel.style.zIndex = hot ? "6" : String(2 + i);
+    const sc = hot ? 1.045 : 0.985;
+    const dx = hot ? -6 : 10;
+    const y = (1 - Math.min(1, born)) * 28 + Math.sin(local * 1.6 + i) * 4;
+    panel.style.transform = "translate(" + dx.toFixed(1) + "px," + y.toFixed(1) + "px) scale(" + sc.toFixed(3) + ")";
+  });
+}
+function drawLinks(root, local, phase) {
+  root.querySelectorAll("[data-link]").forEach((path) => {
+    const i = +path.dataset.link;
+    const p = phase % 3 > i ? 1 : ease(clamp((local - 0.08 - i * 0.18) / 0.28));
+    path.style.strokeDashoffset = String((1 - p) * 280);
+  });
+}
+function moveCursor(root, local, phase) {
+  const cursor = root.querySelector("[data-cursor]");
+  const hots = [...root.querySelectorAll("[data-hot]")];
+  if (!cursor || !hots.length) return;
+  const hot = hots[((phase % hots.length) + hots.length) % hots.length];
+  const u = (local % (STATE.step || 0.48)) / 0.14;
+  const click = u > 1 && u < 1.45 ? 0.62 : 1;
+  cursor.style.left = hot.dataset.x + "%";
+  cursor.style.top = hot.dataset.y + "%";
+  cursor.style.transform = "scale(" + click.toFixed(2) + ")";
+}
+function typeCut(root, local) {
+  const big = root.querySelector(".big");
+  const punch = root.querySelector(".punch");
+  if (!big && !punch) return;
+  const step = STATE.step || 0.48;
+  const mode = Math.floor(Math.max(0, local) / step) % 3;
+  if (big) {
+    big.style.opacity = mode === 1 ? "0" : "1";
+    big.style.transform = mode === 2 ? "translateY(-6%) scale(.78)" : "none";
+  }
+  if (punch) {
+    punch.style.opacity = mode === 0 ? "0" : "1";
+    punch.style.fontSize = mode === 1 ? (STATE.portrait ? "148px" : "200px") : "64px";
+    punch.style.top = mode === 1 ? "34%" : "auto";
+    punch.style.bottom = mode === 1 ? "auto" : "12%";
+  }
+  const build = root.querySelector(".build");
+  if (build) build.style.opacity = mode === 2 ? "1" : "0";
+}
+function cutFlash(root, local) {
+  const bar = root.querySelector("[data-cutbar]");
+  if (!bar) return;
+  const step = STATE.step || 0.48;
+  const u = (local % step) / step;
+  const p = u < 0.18 ? ease(u / 0.18) : 1;
+  bar.style.transform = "scaleX(" + p.toFixed(3) + ")";
+  bar.style.opacity = u < 0.45 ? "1" : String(Math.max(0, 1 - (u - 0.45) / 0.18));
 }
 function logo(root, local) {
   const p = spring(clamp(local / 0.7));
@@ -402,7 +549,7 @@ function seam(root, local) {
   const p = ease(clamp(local / 0.45));
   bar.style.transform = "scaleY(" + (0.2 + p * 0.8).toFixed(3) + ")";
 }
-function play(root, local) {
+function play(root, local, phase) {
   const kind = root.dataset.kind || "";
   if (kind === "scatter" || kind === "sweep" || kind === "sentence") scatter(root, local);
   if (kind === "wipe") wipe(root, local);
@@ -412,8 +559,9 @@ function play(root, local) {
   typing(root, local, "data-line");
   root.querySelectorAll("[data-clip]").forEach((line) => {
     const i = +line.dataset.clip;
-    const p = ease(clamp((local - 0.1 - i * 0.16) / 0.4));
-    line.style.clipPath = "inset(0 " + ((1 - p) * 100).toFixed(1) + "% 0 0)";
+    const p = ease(clamp(local / 0.1));
+    line.style.opacity = String(Math.min(1, p));
+    line.style.clipPath = "none";
   });
   typing(root, local, "data-stream");
   if (kind === "notify") notes(root, local);
@@ -421,7 +569,14 @@ function play(root, local) {
   if (kind === "orbit") orbit(root, local);
   if (kind === "cycler") cycler(root, local);
   counts(root, local);
-  if (kind === "logo") logo(root, local);
+  slam(root, local);
+  build(root, local);
+  typeCut(root, local);
+  focusPanels(root, local, phase);
+  drawLinks(root, local, phase);
+  moveCursor(root, local, phase);
+  cutFlash(root, local);
+  if (kind === "logo" || kind === "end") logo(root, local);
   if (kind === "compare") seam(root, local);
 }
 function render(t) {
@@ -435,21 +590,21 @@ function render(t) {
     ground = scene.dataset.ground || "paper";
     const local = t - a;
     const dur = Math.max(0.2, b - a);
-    let x = Math.sin(local * 0.65) * 14;
-    let y = Math.cos(local * 0.4) * 8;
-    let sc = 1.01 + local * 0.008 + Math.sin(local * 0.9) * 0.012;
+    let x = Math.sin(local * 0.65) * 8;
+    let y = Math.cos(local * 0.4) * 5;
+    let sc = 1.01 + local * 0.006 + Math.sin(local * 0.9) * 0.008;
     let blur = 0;
-    if (scene.dataset.camera === "drift") x = Math.sin(local * 0.5) * 36;
-    if (scene.dataset.camera === "parallax" || scene.dataset.camera === "pan") x = Math.sin(local * 0.35) * 48;
-    if (scene.dataset.camera === "push") sc += ease(clamp(local / dur)) * 0.04;
-    if (scene.dataset.enter === "whip" && local < 0.32) {
-      const p = ease(local / 0.32);
-      x += (1 - p) * 260;
-      blur = (1 - p) * 8;
+    if (scene.dataset.camera === "drift") x = Math.sin(local * 0.5) * 16;
+    if (scene.dataset.camera === "parallax" || scene.dataset.camera === "pan") x = Math.sin(local * 0.35) * 22;
+    if (scene.dataset.camera === "push") sc += ease(clamp(local / dur)) * 0.035;
+    if (scene.dataset.enter === "whip" && local < 0.2) {
+      const p = ease(local / 0.2);
+      x += (1 - p) * 80;
+      blur = (1 - p) * 6;
     }
-    if (scene.dataset.enter === "push" && local < 0.36) sc *= 0.9 + 0.1 * ease(local / 0.36);
+    if (scene.dataset.enter === "push" && local < 0.22) sc *= 0.94 + 0.06 * ease(local / 0.22);
     if (scene.dataset.enter === "mask") {
-      const p = ease(clamp(local / 0.38));
+      const p = ease(clamp(local / 0.16));
       scene.style.clipPath = "inset(0 " + ((1 - p) * 100).toFixed(1) + "% 0 0)";
     } else scene.style.clipPath = "none";
     const cam = scene.querySelector(".cam");
@@ -460,7 +615,7 @@ function render(t) {
     const ribbon = scene.querySelector("[data-ribbon]");
     if (ribbon) ribbon.style.transform = "translateX(" + ((-local * 90) % 600).toFixed(1) + "px)";
     const root = scene.querySelector("[data-kind]");
-    if (root) play(root, local);
+    if (root) play(root, local, phaseOf(local, +scene.dataset.phase || 0));
     const burst = scene.querySelector(".burst");
     if (burst && scene.dataset.exit === "scale") {
       const u = ease(clamp((local - (dur - 0.28)) / 0.28));
@@ -493,7 +648,9 @@ export function renderDirection(brief, direction, opts = {}) {
   const frame = frameOf(opts);
   const accent = /^#[0-9A-Fa-f]{6}$/.test(brief.accent || "") ? brief.accent.toUpperCase() : "#2E4BDB";
   const style = resolveStyle(opts.seed || brief.name, direction.style);
-  const timed = timeShots(spinShots(direction.shots, opts.seed || brief.name), brief.length);
+  const ordered = timeShots(spinShots(direction.shots, opts.seed || brief.name), brief.length);
+  const layouts = ordered.map((shot) => shot.layout);
+  const timed = cutShots(ordered, direction.rhythm);
   for (let i = 0; i < timed.length - 1; i++) {
     if (timed[i + 1].enter === "scale") {
       timed[i].exit = "scale";
@@ -513,7 +670,7 @@ export function renderDirection(brief, direction, opts = {}) {
       h: frame.h,
       html: `<div class="back"></div>${sceneHtml(shot, brief, frame, index)}${ribbon}`,
     }];
-    if (shot.copy) history.push(shot.copy);
+    if (shot.copy && !shot.phase) history.push(shot.copy);
     assertClear(elements);
     return { ...shot, elements };
   });
@@ -530,7 +687,7 @@ export function renderDirection(brief, direction, opts = {}) {
   const body = shots.map((shot) => {
     const burst = shot.exit === "scale" ? `<div class="burst" style="background:${burstFill(shot.exitGround)}"></div>` : "";
     const inner = shot.elements.map((el) => `<div class="el" data-id="${esc(el.id)}" style="left:0;top:0;width:${frame.w}px;height:${frame.h}px">${el.html}</div>`).join("");
-    return `<section class="scene g-${shot.ground}" data-layout="${esc(shot.layout)}" data-start="${shot.start}" data-end="${shot.end}" data-ground="${shot.ground}" data-camera="${style.camera}" data-enter="${shot.enter}" data-exit="${shot.exit || ""}"><div class="cam">${inner}${burst}</div></section>`;
+    return `<section class="scene g-${shot.ground}" data-layout="${esc(shot.layout)}" data-phase="${shot.phase || 0}" data-start="${shot.start}" data-end="${shot.end}" data-ground="${shot.ground}" data-camera="${style.camera}" data-enter="${shot.enter}" data-exit="${shot.exit || ""}"><div class="cam">${inner}${burst}</div></section>`;
   }).join("");
   const state = JSON.stringify({
     end: brief.length,
@@ -538,6 +695,8 @@ export function renderDirection(brief, direction, opts = {}) {
     portrait: frame.portrait,
     pace: style.pace,
     ease: style.ease,
+    step: style.pace === "slow" ? 0.62 : style.ease === "snap" ? 0.4 : style.ease === "glide" ? 0.55 : 0.46,
+    shift: hash(String(opts.seed || brief.name)) % 3,
   }).replace(/</g, "\\u003c");
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:G;src:url("${safeFont}") format("woff2");font-weight:100 900;font-display:swap}
@@ -553,6 +712,47 @@ body[data-density="pack"] .appwrap{padding:16px}
 body[data-density="air"] .appwrap{padding:72px}
 body[data-colour="field"] .g-paper{background:color-mix(in srgb, var(--accent) 16%, var(--paper))}
 body[data-colour="line"] .big{text-decoration:underline;text-decoration-thickness:8px;text-underline-offset:10px;text-decoration-color:var(--accent)}
+body[data-face="mono"]{font-family:ui-monospace,monospace}
+body[data-face="mono"] .big,body[data-face="mono"] .rep,body[data-face="mono"] .hero,body[data-face="mono"] .num,body[data-face="mono"] .host,body[data-face="mono"] .punch{font-weight:650;letter-spacing:-.045em}
+body[data-face="display"] .big,body[data-face="display"] .rep,body[data-face="display"] .hero,body[data-face="display"] .num,body[data-face="display"] .wordmark,body[data-face="display"] .punch{font-weight:300;letter-spacing:-.08em}
+body[data-face="display"] .panel{box-shadow:0 40px 90px rgba(0,0,0,.1)}
+body[data-shape="sharp"] .panel,body[data-shape="sharp"] .note,body[data-shape="sharp"] .bubble{border-radius:0;box-shadow:none;border:2px solid #161616}
+body[data-shape="pill"] .panel,body[data-shape="pill"] .bubble{border-radius:46px}
+body[data-colour="field"] .stage::before{content:"";position:absolute;left:-6%;top:8%;width:48%;height:84%;background:var(--accent);border-radius:var(--radius);z-index:0}
+body[data-colour="line"] .panel{border-top:12px solid var(--accent)}
+body[data-density="air"] .stage{inset:28px}
+body[data-density="pack"] .stage{inset:0}
+body[data-type="heavy"] .punch{font-weight:800}
+.stage{position:absolute;inset:0}
+.panel{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);background:#fff;color:#161616;border-radius:var(--radius);box-shadow:0 28px 70px rgba(0,0,0,.22);overflow:hidden;display:flex;flex-direction:column;padding:28px 32px;z-index:2}
+.panel.darkpanel{background:#14161C;color:#F4F1EA}
+.panel.callout{background:var(--accent);color:var(--on);justify-content:flex-end;gap:8px}
+.panel.callout small,.panel small{display:block;letter-spacing:.14em;text-transform:uppercase;font-size:16px;opacity:.7}
+.panel.callout b{font-size:44px;letter-spacing:-.045em;line-height:.95}
+.panel.callout em{font-style:normal;font-size:72px;letter-spacing:-.06em;line-height:.85}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:22px;font-weight:600;letter-spacing:-.03em;margin-bottom:14px}
+.fileline{display:flex;gap:10px;align-items:center;padding:12px 4px;font-size:24px;font-weight:550}
+.fileline.on{color:var(--accent)}
+.kcard{background:#fff;border-radius:16px;padding:16px;min-height:88px;box-shadow:0 10px 24px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:10px;font-size:24px;font-weight:600;margin-bottom:12px}
+.kcard.ghost{opacity:.45}
+.kcard.lift{outline:3px solid var(--accent)}
+.diffline{font-size:26px;padding:10px 12px;border-radius:10px;margin-top:8px}
+.diffline.add{background:#12382C;color:#7DDEBA}
+.diffline.del{background:#3A1818;color:#FFB4A8}
+.links{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.links path{fill:none;stroke:var(--accent);stroke-width:.55;stroke-dasharray:280;stroke-dashoffset:280}
+.cursor{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 35%,transparent);z-index:8}
+.hot{display:none}
+.cutbar{position:absolute;left:0;right:0;top:0;height:16px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;z-index:9;pointer-events:none}
+.punch{position:absolute;left:0;right:0;bottom:12%;font-size:132px;font-weight:600;letter-spacing:-.06em;line-height:.84;color:var(--accent);text-align:center}
+.build{position:absolute;left:7%;top:9%;display:flex;flex-direction:column;gap:10px;font-size:30px;font-weight:550;letter-spacing:-.03em}
+.chart.tall{flex:1;min-height:220px}
+.panel .codebody{font-size:28px;gap:14px;padding:20px 8px;background:transparent;color:inherit}
+.panel .tabs{background:transparent;color:inherit}
+.panel .src{white-space:normal}
+.panel .bubble{font-size:36px;max-width:100%}
+body.portrait .punch{font-size:72px}
+body.portrait .panel.callout b{font-size:32px}
 body[data-bg="dots"] .back{background-image:radial-gradient(rgba(20,20,20,.28) 1.5px, transparent 1.6px);background-size:22px 22px}
 body[data-bg="bands"] .back{background-image:repeating-linear-gradient(-18deg, transparent, transparent 18px, rgba(20,20,20,.06) 18px, rgba(20,20,20,.06) 36px)}
 body[data-bg="diagonal"] .back{background-image:repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(20,20,20,.08) 10px, rgba(20,20,20,.08) 12px)}
@@ -692,7 +892,7 @@ body.portrait .half{min-height:50%}
 .ribbon span{display:inline-block}
 .burst{position:absolute;left:50%;top:50%;width:100px;height:100px;margin:-50px;border-radius:24px;opacity:0;z-index:5}
 .ico{display:block;flex:none}
-</style></head><body class="${frame.portrait ? "portrait" : "landscape"}" data-ground="paper" data-director="1" data-type="${style.type}" data-ease="${style.ease}" data-bg="${style.ground}" data-colour="${style.colour}" data-shape="${style.shape}" data-density="${style.density}" data-pace="${style.pace}">
+</style></head><body class="${frame.portrait ? "portrait" : "landscape"}" data-ground="paper" data-director="1" data-type="${style.type}" data-ease="${style.ease}" data-bg="${style.ground}" data-colour="${style.colour}" data-shape="${style.shape}" data-density="${style.density}" data-pace="${style.pace}" data-face="${style.face}">
 ${body}
 <script id="state" type="application/json">${state}</script>
 <script>${RUNTIME}</script>
@@ -707,6 +907,6 @@ ${body}
     length: brief.length,
     accent,
     frame: frame.portrait ? "portrait" : "landscape",
-    layouts: shots.map((shot) => shot.layout),
+    layouts,
   };
 }

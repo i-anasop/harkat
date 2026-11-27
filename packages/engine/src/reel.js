@@ -19,11 +19,17 @@ const font = path.join(root, "films/_template/lib/Geist-Variable.woff2");
 mkdirSync(out, { recursive: true });
 try { symlinkSync(font, path.join(out, "Geist.woff2")); } catch { /* already linked */ }
 
+const onlyFlag = process.argv.find((arg) => arg.startsWith("--only"));
+const only = onlyFlag ? (onlyFlag.split("=")[1] || "").split(",").filter(Boolean) : [];
+const sheetMode = process.argv.includes("--sheet") || process.argv.includes("--mp4");
+
 const films = [];
-const old = compose({ ...DIRECTOR_BRIEFS.keel, length: 15 }, { fontUrl: "../Geist.woff2" });
-if (!old.ok) throw new Error(old.reason);
-films.push({ id: "keel-rules", html: old.html, duration: old.duration, events: old.events });
-for (const id of ["keel", "linear", "north", "lumen", "harbor"]) {
+if (!only.length) {
+  const old = compose({ ...DIRECTOR_BRIEFS.keel, length: 15 }, { fontUrl: "../Geist.woff2" });
+  if (!old.ok) throw new Error(old.reason);
+  films.push({ id: "keel-rules", html: old.html, duration: old.duration, events: old.events });
+}
+for (const id of (only.length ? only : ["keel", "linear", "north", "lumen", "harbor"])) {
   const read = readBrief(DIRECTOR_BRIEFS[id]);
   if (!read.ok) throw new Error(read.reason);
   let brief = read.brief;
@@ -45,7 +51,7 @@ for (const id of ["keel", "linear", "north", "lumen", "harbor"]) {
   if (!made.ok) throw new Error(`${id}: ${made.reason}`);
   films.push({ id, html: made.html, duration: made.duration, events: made.events });
 }
-{
+if (!only.length) {
   const again = readBrief(DIRECTOR_BRIEFS.keel);
   const alt = compileDirection(again.brief, RECORDED.keel, { fontUrl: "../Geist.woff2", seed: "beta" });
   if (!alt.ok) throw new Error(alt.reason);
@@ -74,6 +80,44 @@ for (const film of films) {
   console.log("stills", film.id);
 }
 await browser.close();
+
+async function contactSheet(browser, film, viewport) {
+  const step = 0.5;
+  const count = Math.max(1, Math.floor(film.duration / step));
+  const sheetDir = path.join(out, `${film.id}-sheet-frames`);
+  mkdirSync(sheetDir, { recursive: true });
+  const page = await browser.newPage({ viewport });
+  await page.goto(pathToFileURL(path.join(out, film.id, "film.html")).href);
+  await page.waitForFunction("window.READY === true");
+  for (let i = 0; i < count; i++) {
+    await page.evaluate((time) => window.render(time), i * step);
+    const buf = await page.screenshot({ type: "jpeg", quality: 70 });
+    writeFileSync(path.join(sheetDir, `f-${String(i).padStart(3, "0")}.jpg`), buf);
+    if (i % 10 === 0) process.stdout.write(`\r${film.id} sheet ${(i * step).toFixed(1)}s`);
+  }
+  await page.close();
+  const cols = 10;
+  const rows = Math.ceil(count / cols);
+  const wide = viewport.width > viewport.height;
+  const sheetPath = path.join(out, `${film.id}-sheet.jpg`);
+  await new Promise((resolve, reject) => {
+    const tile = spawn("ffmpeg", [
+      "-y", "-loglevel", "error",
+      "-framerate", "30", "-i", path.join(sheetDir, "f-%03d.jpg"),
+      "-vf", `scale=${wide ? 320 : 180}:${wide ? 180 : 320},tile=${cols}x${rows}`,
+      "-frames:v", "1", sheetPath,
+    ]);
+    tile.on("close", (code) => (code ? reject(new Error(`tile ${film.id} ${code}`)) : resolve()));
+  });
+  console.log(`\nsheet ${sheetPath}`);
+}
+
+if (sheetMode && !process.argv.includes("--mp4")) {
+  const sheetBrowser = await chromium.launch();
+  for (const film of films) await contactSheet(sheetBrowser, film, { width: 1920, height: 1080 });
+  await sheetBrowser.close();
+  process.exit(0);
+}
 
 if (!process.argv.includes("--mp4")) process.exit(0);
 

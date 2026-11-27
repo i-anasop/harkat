@@ -231,7 +231,7 @@ export function normalizeDirection(raw, brief, siteText = "", seed = "0") {
   if (!source) return { ok: false, reason: "The direction needs a shots list." };
 
   const cleaned = [];
-  for (let i = 0; i < source.length && cleaned.length < 14; i++) {
+  for (let i = 0; i < source.length && cleaned.length < 20; i++) {
     const shot = source[i] || {};
     const line = copyAllowed(shot.copy, brief, siteText);
     if (!line.ok) return { ok: false, reason: `Shot ${i + 1}: ${line.reason}` };
@@ -314,7 +314,7 @@ export function acceptBeats(raw, brief, siteText = "") {
   const list = Array.isArray(raw?.beats) ? raw.beats : Array.isArray(raw?.shots) ? raw.shots : null;
   if (!list) return { ok: false, reason: "Beats need a list." };
   const beats = [];
-  for (let i = 0; i < list.length && beats.length < 14; i++) {
+  for (let i = 0; i < list.length && beats.length < 20; i++) {
     const line = copyAllowed(list[i]?.copy, brief, siteText);
     if (!line.ok) return { ok: false, reason: `Beat ${i + 1}: ${line.reason}` };
     beats.push({

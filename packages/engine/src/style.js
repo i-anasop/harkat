@@ -1,6 +1,6 @@
 import { hash } from "./plan.js";
 
-/** Independent axes. A seed fills any the model leaves blank, and always moves ground, camera, and shape. */
+/** Independent axes. A seed fills any the model leaves blank. A set axis stays, so a studio can be pinned. */
 const AXES = {
   type: ["tight", "wide", "heavy", "light"],
   ease: ["spring", "snap", "glide"],
@@ -10,6 +10,7 @@ const AXES = {
   shape: ["round", "sharp", "pill"],
   density: ["air", "pack"],
   pace: ["snap", "slow"],
+  face: ["sans", "mono", "display"],
 };
 
 function pick(list, seed, salt) {
@@ -32,12 +33,7 @@ function clean(given) {
 }
 
 export function resolveStyle(seed, given) {
-  const rolled = styleFromSeed(seed);
-  const chosen = { ...rolled, ...clean(given) };
-  chosen.ground = rolled.ground;
-  chosen.camera = rolled.camera;
-  chosen.shape = clean(given).shape || rolled.shape;
-  return chosen;
+  return { ...styleFromSeed(seed), ...clean(given) };
 }
 
 export const STYLE_AXES = AXES;

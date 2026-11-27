@@ -2,7 +2,7 @@
 
 This file is the whole context. A future developer or AI should be able to continue Harkat from this document and the repo, with nothing else.
 
-Last updated: 27 Nov 2026, after the chat assistant (plan first, then Make film). Update this file whenever routes, prices, env vars, or the engine contract change.
+Last updated: 27 Nov 2026, after the chat assistant (plan first, then Make film) and the rhythm and studio pass on the stage. Update this file whenever routes, prices, env vars, or the engine contract change.
 
 Owner: Momin (Anas). GitHub: `i-anasop/harkat` is the live repo. He works on **`main` only**. Commit and push straight to `main`. Do not open feature branches or pull requests for this repo.
 
@@ -200,7 +200,27 @@ Each layout is a full frame, not a small card in a void. Type is large. Product 
 
 `frame: "portrait"` on the studio body (or `compileDirection` opts) draws 1080×1920. The default is 1920×1080. Local renders are 30fps.
 
-The camera does not settle. After the entrance, the frame keeps a push or a drift, the background moves the other way, bars breathe, type keeps a small bob, and a line of earlier beats scrolls along the bottom. A seed picks the background (grid, dots, bands, diagonal, or plain), the camera, and the corner shape. The model may also set type (tight, wide, heavy, light), easing, colour use, density, and pace. The same brief with a new seed reorders the middle shots as well as the style.
+A 30s film is about 36 cuts, average **0.8s** (measured rhythm a little longer). `cutShots` splits each director shot into pieces of about 0.8s. Inside a piece the stage runs two to four sub-events on a clock (`STATE.step`, about 0.4–0.6s): the headline gives way to a single word, then to a build list; a counter ticks up to the brief’s number; panels take turns in front; a cursor moves and clicks; a connector draws. A frame 0.5s later is a different picture. `made.layouts` stays the director’s list, one use of each layout, which is what the tests check. The pieces are the cuts.
+
+Product layouts are not one window. `dashboard`, `code`, `chat`, `search`, `kanban`, `toggles`, and `notify` are a stack of overlapping panels (a main crop, a second card, a callout), a cursor, and an SVG connector. Copy in those panels is the brief. The camera stays a small push, drift, or parallax so the panels remain in the frame. No perspective, no rotateX/rotateY.
+
+Style is nine axes in `style.js`. A seed fills any axis the direction leaves blank. An axis the direction sets is kept, so a film can be pinned to a studio. `data-face` is `sans` (Geist), `mono` (the system monospace), or `display` (Geist at a light weight and wide tracking).
+
+| Axis | Values | What it changes |
+|------|--------|-----------------|
+| type | tight, wide, heavy, light | Tracking and weight of the big type |
+| face | sans, mono, display | The family. Mono reads as a dev tool, display as a design studio |
+| ease | spring, snap, glide | Overshoot, or none. Also the sub-event clock |
+| ground | grid, dots, bands, diagonal, plain | The background pattern |
+| colour | type, field, line | Accent on words, a colour block, or rules on the type and the panels |
+| camera | push, drift, parallax | A small in-plane move. The background moves the other way |
+| shape | round, sharp, pill | Corners, and a hard border when sharp |
+| density | air, pack | How tight the panels sit |
+| pace | snap, slow | The sub-event step (about 0.4s or 0.6s) |
+
+The hand-authored films pin a studio: Keel is mono, sharp, snap, diagonal, line. Lumen is display, pill, glide, plain, field. Linear is sans, sharp, spring, grid, type, parallax. North is display on bands. Harbor is light type on dots. A new seed still reorders the middle shots and shifts which sub-event leads.
+
+The bars breathe, type keeps a small bob, and a line of earlier beats scrolls along the bottom.
 
 `POST /api/studio/film` accepts an optional `plan`. A director shot list (`shots`) is followed and does not spend a model call. The chat plan (`title`, `beats`, `length`, `colours`) is not that object: those beats are written into the brief and the site text, and the director then writes the shots. An invalid shot list falls through to the director, then to the rules.
 
@@ -426,7 +446,7 @@ Pay when you order. The order flow is a modal on every page (`OrderModal`), open
 
 ## Known gaps
 
-- **About a 6 against the Synteq sheet, not an 8.** Scenes keep a drift, a scrolling line of earlier beats, and a seed changes the background, the corners, the camera, and the order of the middle shots. The contact sheet still holds one idea for several frames, and the UI is a kit, not Synteq’s layered drawing. A paid film is still finished by a person. Do not sell the raw preview as the delivered film.
+- **About a 7 against the Synteq sheet, not an 8.** Cuts average about 0.8s, and a frame 0.5s later is a different picture (a scattered word, then the line, then one word, then a stack of panels). Keel, Lumen, and Linear no longer share one studio. The product frames are overlapping panels, a cursor, and a connector, drawn from the brief. They are still a kit: the code is the brief set in a dark card, not a traced editor, and a type cut can be a single word. A paid film is still finished by a person. Do not sell the raw preview as the delivered film.
 - Phone layout was fixed on 26 Nov 2026. The thing that made every page feel frozen was `overflow-x: clip` on `html`, `body`, and `.page`: CSS then turns the other axis into a scroll container, and iOS swallows the touch. Do not put overflow-x back on those elements. The `/pro` reel no longer uses a sticky `100vh` scrub on screens 860px and under (the films stack). Full-bleed no longer uses `100vw`. Heights that fill the screen use `dvh`. Inputs are 16px so iOS does not zoom. Tap targets are at least 44px. A headless check at 360, 375, 390, and 414 found `scrollWidth === clientWidth` on `/`, `/pro`, `/work`, `/process`, `/docs`, and `/paid`, including after a film was generated.
 - Domain is not chosen. Brand-kit notes mention Cloudflare Pages; the site is actually set up for **Vercel**.
 - No bank/card checkout. Crypto only, and only when NOWPayments keys are present.
@@ -463,7 +483,19 @@ The rule planner is still the fallback. `/api/studio/film` asks a director model
 
 The picture pass after that replaced the sparse cards. The kit is kinetic type (scatter, swap, stack, icons in the line, a highlight sweep), product UI (dashboard, code, chat, search, kanban, toggles, notifications), an icon orbit, a cycling list, a metric with a chart, a dark/light split, a logo reveal, and a colour end card. Lucide icons, ISC, with the notice in `icons.js`. Renders are 1920×1080 at 30fps, and `frame: "portrait"` is 1080×1920.
 
-Hand-authored 30s films for the five archetypes: Keel, Linear, North, Lumen, Harbor. `node packages/engine/src/reel.js --mp4` writes the mp4 and a 0.5s contact sheet. They are denser than the first director pass. They are not Synteq. Honest gap: the UI is a kit, not a traced product, and a beat holds one idea instead of several overlapping.
+Hand-authored 30s films for the five archetypes: Keel, Linear, North, Lumen, Harbor. `node packages/engine/src/reel.js --mp4` writes the mp4 and a 0.5s contact sheet. The 27 Nov pass cuts those films about every 0.8s and stacks the product scenes. The honest score after that pass is in Known gaps.
+
+## What changed on 27 Nov 2026 (rhythm and studios)
+
+The stage, not the model, now cuts the film. `timeShots` still fills the length. `cutShots` breaks each shot into pieces of about 0.8s, and the runtime changes the picture again inside the piece. Product scenes are a stack: main panel, overlapping card, callout, cursor, connector. `style.js` has nine axes. A set axis wins over the seed, which is how Keel, Lumen, and Linear stay different studios. The director prompt asks for a face, a shape, an ease, and a colour use, and for about one shot per 1.5s, up to 20 shots. Words are still rejected when they are not in the brief.
+
+`node packages/engine/src/reel.js --only=keel,lumen,linear --sheet` writes a contact sheet, one frame every 0.5s, and skips the full mp4. `--mp4` still encodes.
+
+### Next three improvements
+
+1. **Let the director time the sub-events.** The clock in `stage.js` decides that a word swaps at 0.4s. The shot JSON should name two to four events (`at`, `action`, `target`) so a film can hold a chart and cut a word for a reason. The stage should play that list, not invent it.
+2. **Replace the one-function-per-layout kit with a component grammar.** A shot should place a nav, a table, an inspector, and a toast, each with a crop and a zoom target, using copy from the brief and the scraped page. That is the difference between these panels and a Synteq frame. Two open font files (a display face and a mono) should replace the single Geist file, so `face` is a real pairing.
+3. **Keep every still readable.** A sample on the 0.5s grid can still land on the first tenth of a cut, or on a single punch word. The stage should refuse a frame whose only mark is one word in a void, and it should finish entrances before the first sample a person would screenshot.
 
 ## What changed on 27 Nov 2026 (chat)
 

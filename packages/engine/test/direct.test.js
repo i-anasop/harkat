@@ -52,6 +52,20 @@ test("recorded directions compile into different 2D films", () => {
   assert.match(films.lumen.html, /data-kind="sentence"/);
   assert.match(films.linear.html, /data-layout="search"/);
   assert.match(films.harbor.html, /data-kind="chat"/);
+  assert.match(films.keel.html, /data-face="mono"/);
+  assert.match(films.keel.html, /class="panel /);
+  assert.match(films.keel.html, /data-link="/);
+  assert.match(films.lumen.html, /data-face="display"/);
+  assert.match(films.lumen.html, /data-shape="pill"/);
+  assert.match(films.linear.html, /data-face="sans"/);
+  assert.match(films.linear.html, /data-camera="parallax"/);
+  for (const id of ["keel", "lumen", "linear"]) {
+    const parts = [...films[id].html.matchAll(/data-start="([\d.]+)" data-end="([\d.]+)"/g)];
+    const durs = parts.map((part) => Number(part[2]) - Number(part[1]));
+    const avg = durs.reduce((sum, dur) => sum + dur, 0) / durs.length;
+    assert.ok(avg >= 0.55 && avg <= 1.2, `${id} avg cut ${avg.toFixed(2)}s`);
+    assert.ok(films[id].html.includes("data-slam"), id);
+  }
   assert.doesNotMatch(films.lumen.html, /class="tile word"/);
   const rules = compose(DIRECTOR_BRIEFS.keel);
   assert.notEqual(rules.html, films.keel.html);
