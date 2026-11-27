@@ -124,7 +124,8 @@ export function conceptPrompt(brief, opts) {
     "ink-open starts on black. field starts on the brand colour. paper stays light until the end card.",
     "The seed must change the idea and the opening layout. Do not describe music, people, or 3D.",
     "Open on wipe, scatter, or sweep. Then product UI (dashboard, code, chat, search, kanban, toggles, notify). Then type (stack, swap, sentence, cycler) or orbit. End on end.",
-    "Alternate ink and paper. A beat is about 2 to 3 seconds. Hook in the first shot. No blank grids. No tiny centered line as the whole frame.",
+    "Also set style: {\"type\":\"tight|wide|heavy|light\",\"ease\":\"spring|snap|glide\",\"colour\":\"type|field|line\",\"density\":\"air|pack\",\"pace\":\"snap|slow\"}.",
+    "The seed must change both the opening layout and the style. Alternate ink and paper. Hook in the first shot. No repeated line of copy. No frozen frame.",
     `Seed: ${opts.seed}`,
     brandBlock(brief, opts),
   ].join("\n");
@@ -208,6 +209,7 @@ function zip(concept, beats, motions) {
     concept: concept.concept,
     treatment: concept.treatment,
     rhythm: concept.rhythm,
+    style: concept.style,
     shots: beats.map((beat, index) => ({
       role: beat.role,
       copy: beat.copy,

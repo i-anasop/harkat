@@ -45,6 +45,12 @@ for (const id of ["keel", "linear", "north", "lumen", "harbor"]) {
   if (!made.ok) throw new Error(`${id}: ${made.reason}`);
   films.push({ id, html: made.html, duration: made.duration, events: made.events });
 }
+{
+  const again = readBrief(DIRECTOR_BRIEFS.keel);
+  const alt = compileDirection(again.brief, RECORDED.keel, { fontUrl: "../Geist.woff2", seed: "beta" });
+  if (!alt.ok) throw new Error(alt.reason);
+  films.push({ id: "keel-seed-b", html: alt.html, duration: alt.duration, events: alt.events });
+}
 
 for (const film of films) {
   const dir = path.join(out, film.id);

@@ -1,6 +1,8 @@
 import { esc, clipWords } from "./copy.js";
 import { assertClear } from "./layout.js";
 import { icon, iconAt, iconSet } from "./icons.js";
+import { resolveStyle } from "./style.js";
+import { hash } from "./plan.js";
 
 export function onAccent(hex) {
   const n = Number.parseInt(String(hex).replace("#", ""), 16);
@@ -17,7 +19,7 @@ export function frameOf(opts = {}) {
   return { w: 1920, h: 1080, portrait: false };
 }
 
-function linesOf(shot, brief, n = 4) {
+function linesOf(shot, brief, n = 4, index = 0) {
   const pool = [];
   const push = (text) => {
     const bits = clipWords(text, 6);
@@ -25,11 +27,19 @@ function linesOf(shot, brief, n = 4) {
     if (line && !pool.includes(line)) pool.push(line);
   };
   (shot.rows || []).forEach(push);
-  push(shot.copy);
   (brief.features || []).forEach(push);
   push(brief.problem);
+  push(shot.copy);
   if (!pool.length) pool.push(shot.copy || brief.name);
-  return pool.slice(0, n);
+  const start = index % pool.length;
+  const spun = pool.slice(start).concat(pool.slice(0, start));
+  const out = [];
+  for (const line of spun) {
+    if (line === shot.copy && out.length) continue;
+    out.push(line);
+    if (out.length === n) break;
+  }
+  return out.length ? out : [shot.copy];
 }
 
 function typeSize(text, portrait, start) {
@@ -59,9 +69,9 @@ function kindOf(layout) {
   return layout || "sweep";
 }
 
-function sceneHtml(shot, brief, frame) {
+function sceneHtml(shot, brief, frame, index = 0) {
   const layout = kindOf(shot.layout);
-  const rows = linesOf(shot, brief, 4);
+  const rows = linesOf(shot, brief, 4, index);
   const name = clipWords(brief.name, 2).join(" ") || brief.name;
   const copy = shot.copy;
   const hi = shot.highlight || "";
@@ -210,6 +220,15 @@ function endHtml(brief) {
   return `<div class="fill endwrap" data-kind="end">${logo}<div class="host">${esc(host)}</div>${sample}</div>`;
 }
 
+function spinShots(shots, seed) {
+  if (!Array.isArray(shots) || shots.length < 4) return shots;
+  const head = shots[0];
+  const tail = shots[shots.length - 1];
+  const mid = shots.slice(1, -1);
+  const shift = hash(String(seed)) % mid.length;
+  return [head, ...mid.slice(shift), ...mid.slice(0, shift), tail];
+}
+
 export function timeShots(shots, length) {
   const weights = shots.map((shot) => Math.min(3, Math.max(1, Number(shot.weight) || 1)));
   const sum = weights.reduce((total, weight) => total + weight, 0) || shots.length;
@@ -256,8 +275,9 @@ function scatter(root, local) {
     const p = spring(clamp((local - i * 0.018) / 0.5));
     const ang = i * 0.9;
     const dist = (1 - Math.min(1, Math.max(0, p))) * (STATE.portrait ? 280 : 460);
+    const bob = Math.sin(local * 1.7 + i * 0.6) * (4 + (STATE.pace === "snap" ? 3 : 0));
     const x = Math.cos(ang) * dist;
-    const y = Math.sin(ang * 1.17) * dist * 0.55;
+    const y = Math.sin(ang * 1.17) * dist * 0.55 + bob;
     ch.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px)";
     const blur = Math.max(0, (1 - p) * 7);
     ch.style.filter = blur > 0.4 ? "blur(" + blur.toFixed(1) + "px)" : "none";
@@ -282,7 +302,7 @@ function swap(root, local) {
   if (!slot) return;
   const words = (slot.dataset.words || "").split("|").filter(Boolean);
   if (!words.length) return;
-  const step = 0.7;
+    const step = STATE.pace === "slow" ? 0.95 : 0.42;
   const index = Math.floor(Math.max(0, local) / step) % words.length;
   const u = ease(clamp((local % step) / 0.28));
   slot.textContent = words[index];
@@ -292,7 +312,7 @@ function swap(root, local) {
 function stack(root, local) {
   const reps = [...root.querySelectorAll("[data-rep]")];
   if (!reps.length) return;
-  const active = Math.floor(Math.max(0, local) / 0.48) % reps.length;
+  const active = Math.floor(Math.max(0, local) / (STATE.pace === "slow" ? 0.7 : 0.38)) % reps.length;
   reps.forEach((rep, i) => {
     const on = i === active;
     rep.style.opacity = on ? "1" : "0.16";
@@ -302,7 +322,7 @@ function stack(root, local) {
 function bars(root, local) {
   root.querySelectorAll("[data-bar]").forEach((bar, n) => {
     const p = ease(clamp((local - 0.12 - n * 0.05) / 0.45));
-    const h = (+bar.dataset.bar || 40) * p;
+    const h = (+bar.dataset.bar || 40) * p * (1 + Math.sin(local * 1.3 + n) * 0.07);
     bar.style.height = h.toFixed(1) + "%";
     bar.style.transform = "none";
   });
@@ -415,12 +435,13 @@ function render(t) {
     ground = scene.dataset.ground || "paper";
     const local = t - a;
     const dur = Math.max(0.2, b - a);
-    let x = 0;
-    let sc = 1;
+    let x = Math.sin(local * 0.65) * 14;
+    let y = Math.cos(local * 0.4) * 8;
+    let sc = 1.01 + local * 0.008 + Math.sin(local * 0.9) * 0.012;
     let blur = 0;
-    if (scene.dataset.camera === "push") sc = 1 + ease(clamp(local / dur)) * 0.075;
-    if (scene.dataset.camera === "pan") x = 36 - ease(clamp(local / dur)) * 72;
-    if (scene.dataset.camera === "hold") x = Math.sin(local * 0.55) * 10;
+    if (scene.dataset.camera === "drift") x = Math.sin(local * 0.5) * 36;
+    if (scene.dataset.camera === "parallax" || scene.dataset.camera === "pan") x = Math.sin(local * 0.35) * 48;
+    if (scene.dataset.camera === "push") sc += ease(clamp(local / dur)) * 0.04;
     if (scene.dataset.enter === "whip" && local < 0.32) {
       const p = ease(local / 0.32);
       x += (1 - p) * 260;
@@ -432,10 +453,12 @@ function render(t) {
       scene.style.clipPath = "inset(0 " + ((1 - p) * 100).toFixed(1) + "% 0 0)";
     } else scene.style.clipPath = "none";
     const cam = scene.querySelector(".cam");
-    cam.style.transform = "translateX(" + x.toFixed(1) + "px) scale(" + sc.toFixed(4) + ")";
+    cam.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) scale(" + sc.toFixed(4) + ")";
     cam.style.filter = blur > 0.35 ? "blur(" + blur.toFixed(1) + "px)" : "none";
     const back = scene.querySelector(".back");
-    if (back) back.style.transform = "translateX(" + (x * 0.35).toFixed(1) + "px)";
+    if (back) back.style.transform = "translate(" + (x * -0.65).toFixed(1) + "px," + (y * -0.8).toFixed(1) + "px)";
+    const ribbon = scene.querySelector("[data-ribbon]");
+    if (ribbon) ribbon.style.transform = "translateX(" + ((-local * 90) % 600).toFixed(1) + "px)";
     const root = scene.querySelector("[data-kind]");
     if (root) play(root, local);
     const burst = scene.querySelector(".burst");
@@ -469,22 +492,28 @@ function burstFill(ground) {
 export function renderDirection(brief, direction, opts = {}) {
   const frame = frameOf(opts);
   const accent = /^#[0-9A-Fa-f]{6}$/.test(brief.accent || "") ? brief.accent.toUpperCase() : "#2E4BDB";
-  const timed = timeShots(direction.shots, brief.length);
+  const style = resolveStyle(opts.seed || brief.name, direction.style);
+  const timed = timeShots(spinShots(direction.shots, opts.seed || brief.name), brief.length);
   for (let i = 0; i < timed.length - 1; i++) {
     if (timed[i + 1].enter === "scale") {
       timed[i].exit = "scale";
       timed[i].exitGround = timed[i + 1].ground;
     }
   }
+  const history = [];
   const shots = timed.map((shot, index) => {
+    const ribbon = history.length
+      ? `<div class="ribbon"><span data-ribbon>${esc([...history, ...history].join("    ·    "))}</span></div>`
+      : "";
     const elements = [{
       id: `s${index}`,
       x: 0,
       y: 0,
       w: frame.w,
       h: frame.h,
-      html: `<div class="back"></div>${sceneHtml(shot, brief, frame)}`,
+      html: `<div class="back"></div>${sceneHtml(shot, brief, frame, index)}${ribbon}`,
     }];
+    if (shot.copy) history.push(shot.copy);
     assertClear(elements);
     return { ...shot, elements };
   });
@@ -501,14 +530,34 @@ export function renderDirection(brief, direction, opts = {}) {
   const body = shots.map((shot) => {
     const burst = shot.exit === "scale" ? `<div class="burst" style="background:${burstFill(shot.exitGround)}"></div>` : "";
     const inner = shot.elements.map((el) => `<div class="el" data-id="${esc(el.id)}" style="left:0;top:0;width:${frame.w}px;height:${frame.h}px">${el.html}</div>`).join("");
-    return `<section class="scene g-${shot.ground}" data-layout="${esc(shot.layout)}" data-start="${shot.start}" data-end="${shot.end}" data-ground="${shot.ground}" data-camera="${shot.camera}" data-enter="${shot.enter}" data-exit="${shot.exit || ""}"><div class="cam">${inner}${burst}</div></section>`;
+    return `<section class="scene g-${shot.ground}" data-layout="${esc(shot.layout)}" data-start="${shot.start}" data-end="${shot.end}" data-ground="${shot.ground}" data-camera="${style.camera}" data-enter="${shot.enter}" data-exit="${shot.exit || ""}"><div class="cam">${inner}${burst}</div></section>`;
   }).join("");
-  const state = JSON.stringify({ end: brief.length, logo: brief.logo || "", portrait: frame.portrait }).replace(/</g, "\\u003c");
+  const state = JSON.stringify({
+    end: brief.length,
+    logo: brief.logo || "",
+    portrait: frame.portrait,
+    pace: style.pace,
+    ease: style.ease,
+  }).replace(/</g, "\\u003c");
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:G;src:url("${safeFont}") format("woff2");font-weight:100 900;font-display:swap}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:${frame.w}px;height:${frame.h}px;overflow:hidden;background:#E4E1DA;color:#141414;font-family:G,sans-serif;-webkit-font-smoothing:antialiased}
-body{--accent:${accent};--on:${onAccent(accent)};--ink:#0C0D10;--paper:#E4E1DA;--card:#F7F6F3}
+body{--accent:${accent};--on:${onAccent(accent)};--ink:#0C0D10;--paper:#E4E1DA;--card:#F7F6F3;--radius:28px}
+body[data-shape="sharp"]{--radius:4px}
+body[data-shape="pill"]{--radius:48px}
+body[data-type="wide"] .big,body[data-type="wide"] .rep,body[data-type="wide"] .hero{letter-spacing:.02em;font-weight:500}
+body[data-type="heavy"] .big,body[data-type="heavy"] .rep,body[data-type="heavy"] .num{font-weight:800;letter-spacing:-.08em}
+body[data-type="light"] .big,body[data-type="light"] .rep{font-weight:400}
+body[data-density="pack"] .appwrap{padding:16px}
+body[data-density="air"] .appwrap{padding:72px}
+body[data-colour="field"] .g-paper{background:color-mix(in srgb, var(--accent) 16%, var(--paper))}
+body[data-colour="line"] .big{text-decoration:underline;text-decoration-thickness:8px;text-underline-offset:10px;text-decoration-color:var(--accent)}
+body[data-bg="dots"] .back{background-image:radial-gradient(rgba(20,20,20,.28) 1.5px, transparent 1.6px);background-size:22px 22px}
+body[data-bg="bands"] .back{background-image:repeating-linear-gradient(-18deg, transparent, transparent 18px, rgba(20,20,20,.06) 18px, rgba(20,20,20,.06) 36px)}
+body[data-bg="diagonal"] .back{background-image:repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(20,20,20,.08) 10px, rgba(20,20,20,.08) 12px)}
+body[data-bg="plain"] .back{background-image:none}
+.app,.editor,.board,.finder,.note,.stat,.col article{border-radius:var(--radius)}
 body.portrait .cycler,body.portrait .metric,body.portrait .halves,body.portrait .app{flex-direction:column}
 body.portrait .rail{width:100%;height:108px;flex-direction:row;border-right:0;border-bottom:1px solid rgba(0,0,0,.08)}
 body.portrait .half{min-height:50%}
@@ -639,9 +688,11 @@ body.portrait .half{min-height:50%}
 .biglogo{width:220px;height:220px;object-fit:contain}
 .host{font-size:128px;font-weight:600;letter-spacing:-.05em}
 .sample{letter-spacing:.18em;text-transform:uppercase;font-size:18px;opacity:.75}
+.ribbon{position:absolute;left:0;right:0;bottom:28px;overflow:hidden;white-space:nowrap;font-size:22px;font-weight:600;letter-spacing:-.03em;opacity:.72;pointer-events:none}
+.ribbon span{display:inline-block}
 .burst{position:absolute;left:50%;top:50%;width:100px;height:100px;margin:-50px;border-radius:24px;opacity:0;z-index:5}
 .ico{display:block;flex:none}
-</style></head><body class="${frame.portrait ? "portrait" : "landscape"}" data-ground="paper" data-director="1">
+</style></head><body class="${frame.portrait ? "portrait" : "landscape"}" data-ground="paper" data-director="1" data-type="${style.type}" data-ease="${style.ease}" data-bg="${style.ground}" data-colour="${style.colour}" data-shape="${style.shape}" data-density="${style.density}" data-pace="${style.pace}">
 ${body}
 <script id="state" type="application/json">${state}</script>
 <script>${RUNTIME}</script>

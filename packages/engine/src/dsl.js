@@ -294,7 +294,7 @@ export function normalizeDirection(raw, brief, siteText = "", seed = "0") {
     used.add(shot.layout);
   }
 
-  return { ok: true, direction: { concept, treatment, rhythm, shots: cleaned } };
+  return { ok: true, direction: { concept, treatment, rhythm, shots: cleaned, style: raw.style } };
 }
 
 export function acceptConcept(raw) {
@@ -307,7 +307,7 @@ export function acceptConcept(raw) {
   let concept = String(raw.concept || "").replace(/\s+/g, " ").trim().slice(0, 280);
   if (concept && !screenText(concept).ok) return { ok: false, reason: "That concept was refused." };
   if (!concept) concept = `${treatment} ${rhythm}`;
-  return { ok: true, concept: { concept, treatment, rhythm, layouts } };
+  return { ok: true, concept: { concept, treatment, rhythm, layouts, style: raw.style } };
 }
 
 export function acceptBeats(raw, brief, siteText = "") {

@@ -199,6 +199,10 @@ Each layout is a full frame, not a small card in a void. Type is large. Product 
 
 `frame: "portrait"` on the studio body (or `compileDirection` opts) draws 1080×1920. The default is 1920×1080. Local renders are 30fps.
 
+The camera does not settle. After the entrance, the frame keeps a push or a drift, the background moves the other way, bars breathe, type keeps a small bob, and a line of earlier beats scrolls along the bottom. A seed picks the background (grid, dots, bands, diagonal, or plain), the camera, and the corner shape. The model may also set type (tight, wide, heavy, light), easing, colour use, density, and pace. The same brief with a new seed reorders the middle shots as well as the style.
+
+`POST /api/studio/film` accepts an optional `plan` object, the shot list `/api/studio/chat` will send once that route exists. A valid plan is followed and does not spend a model call. An invalid plan falls through to the director, then to the rules.
+
 When the time budget has about 4.5s left after the shot list, a critique call may swap a layout. It cannot change the words. It is skipped when the budget is the default 9s one-call path.
 
 `exemplars.js` holds five hand-authored 30s films: Keel (dev tool), Linear, North (fintech), Lumen (design), Harbor (assistant). `node packages/engine/src/reel.js --mp4` renders them, plus a portrait Keel, and writes a contact sheet (one frame every 0.5s). A live model is not required for those.

@@ -58,7 +58,7 @@ export type SiteExtract = {
 export function compose(input: BriefInput, opts?: { fontUrl?: string }): ComposeOk | ComposeNo;
 export function composeWithModel(
   input: BriefInput,
-  opts?: { fontUrl?: string; siteText?: string; timeout?: number; seed?: string | number; ip?: string; brandFont?: string; frame?: "landscape" | "portrait" },
+  opts?: { fontUrl?: string; siteText?: string; timeout?: number; seed?: string | number; ip?: string; brandFont?: string; frame?: "landscape" | "portrait"; plan?: unknown },
 ): Promise<ComposeOk | ComposeNo>;
 export function screenText(text: string): { ok: true } | { ok: false; reason: string };
 export function extractSite(html: string, pageUrl: string): SiteExtract;

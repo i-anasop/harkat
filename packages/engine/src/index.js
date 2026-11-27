@@ -12,7 +12,7 @@ export { compileDirection, directFilm, estimateDirectorCost, resetDirectorState 
 export { configuredProviders } from "./providers.js";
 
 import { readBrief } from "./brief.js";
-import { directFilm } from "./direct.js";
+import { compileDirection, directFilm } from "./direct.js";
 import { buildFilm } from "./film.js";
 import { rulePlan } from "./plan.js";
 
@@ -44,6 +44,12 @@ function ruled(brief, opts, note) {
 export async function composeWithModel(input, opts = {}) {
   const read = readBrief(input);
   if (!read.ok) return read;
+  if (opts.plan && typeof opts.plan === "object") {
+    const followed = compileDirection(read.brief, opts.plan, opts);
+    if (followed.ok) {
+      return { ok: true, ...followed, planSource: "model", planCost: 0, planTokens: { in: 0, out: 0 }, planNote: "plan" };
+    }
+  }
   if (opts.model === false || process.env.HARKAT_DIRECTOR === "0") return ruled(read.brief, opts, "off");
   const directed = await directFilm(read.brief, opts);
   if (!directed.ok) return ruled(read.brief, opts, directed.reason || "rules");

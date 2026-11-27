@@ -76,6 +76,21 @@ test("every layout places without an overlap", () => {
   }
 });
 
+test("a new seed changes the picture and an approved plan is followed", async () => {
+  const src = brief();
+  const alpha = compileDirection(src, RECORDED.keel, { seed: "alpha" });
+  const beta = compileDirection(src, RECORDED.keel, { seed: "beta" });
+  assert.equal(alpha.ok, true);
+  assert.equal(beta.ok, true);
+  assert.notEqual(alpha.html, beta.html);
+  assert.match(alpha.html, /data-bg="/);
+  const followed = await composeWithModel(DIRECTOR_BRIEFS.keel, { plan: RECORDED.keel, seed: "plan-test", model: false });
+  assert.equal(followed.ok, true);
+  assert.equal(followed.planNote, "plan");
+  assert.match(followed.html, /data-layout="code"/);
+  assert.match(followed.html, /data-ribbon/);
+});
+
 test("a direction cannot invent a claim or carry markup", () => {
   const src = brief();
   const invented = normalizeDirection({

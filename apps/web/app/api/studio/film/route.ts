@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     prompt?: string;
     seed?: string | number;
     frame?: string;
+    plan?: unknown;
   };
   try {
     body = await req.json();
@@ -114,6 +115,7 @@ export async function POST(req: Request) {
       seed: body.seed,
       ip: clientIp(req),
       frame: body.frame === "portrait" ? "portrait" : "landscape",
+      plan: body.plan && typeof body.plan === "object" ? body.plan : undefined,
     },
   );
   } catch {
